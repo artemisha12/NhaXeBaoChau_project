@@ -1,0 +1,2 @@
+-- Tạo bảng chính cho dự án Nhà xe Bảo Châu
+-- vehicles, routes, packages, bookings, admin_users, website_settings

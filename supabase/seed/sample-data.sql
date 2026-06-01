@@ -1,0 +1,1 @@
+-- Dữ liệu mẫu để test: xe, tuyến đường, gói giá, tài khoản admin, settings
