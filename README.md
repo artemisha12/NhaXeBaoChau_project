@@ -1,16 +1,29 @@
-# BaoChau Empty Repo
+# Nhà Xe Bảo Châu
 
-Repo rỗng cho website Nhà xe Bảo Châu.
+## Yêu cầu
 
-Chức năng chính:
-- Landing Page cho khách hàng xem xe, bảng giá và gửi yêu cầu đặt vé.
-- Admin Dashboard cho nhân viên/quản lý nhận đơn, xử lý vé, quản lý xe, tuyến đường, gói giá và cài đặt thông tin website.
+- [Node.js 18+](https://nodejs.org) — tải về và cài đặt
 
-## Cấu trúc chính
+---
 
-- `public/images`: Chứa ảnh tĩnh.
-- `src/app`: Chứa các trang và server actions.
-- `src/components`: Chứa component giao diện.
-- `src/lib`: Chứa kết nối database, helpers, validations, constants, types.
-- `supabase`: Chứa SQL, migration và dữ liệu mẫu.
-- `docs`: Chứa tài liệu dự án.
+## Chạy project
+
+**1. Cài dependencies**
+
+```bash
+npm install
+```
+
+**2. Tạo file môi trường**
+
+Lấy file `.env.local` mình gửi riêng, đặt vào thư mục gốc của project (cùng cấp với `package.json`).
+
+**3. Chạy**
+
+```bash
+npm run dev
+```
+
+Mở trình duyệt vào [http://localhost:3000](http://localhost:3000)
+
+Admin: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)

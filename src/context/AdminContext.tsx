@@ -9,6 +9,12 @@ import {
   pricePackages as initialPricePackages,
 } from '@/lib/constants/mock-data';
 
+import {
+  loginAdminAction,
+  logoutAdminAction,
+  getAdminInfoAction,
+} from '@/app/actions/auth/actions';
+
 export type SiteSettings = {
   hotline: string;
   zaloPhone: string;
@@ -53,16 +59,16 @@ type AdminContextType = {
   mobileSidebarOpen: boolean;
   setMobileSidebarOpen: (open: boolean) => void;
   
-  // Auth Functions
-  login: (username: string, password: string) => { success: boolean; error?: string };
-  logout: () => void;
+  // Auth Functions (Dùng Server Actions và JWT)
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   getFailedLoginAttempts: () => number;
   incrementFailedLoginAttempts: () => number;
   resetFailedLoginAttempts: () => void;
   getLockoutTime: () => string | null;
   setLockout: () => void;
   
-  // Bookings CRUD
+  // Bookings CRUD (Dùng localStorage mock-data theo yêu cầu)
   addBooking: (booking: Omit<Booking, 'id' | 'code' | 'status'>) => Booking;
   updateBookingStatus: (bookingId: number, status: BookingStatus, note: string) => void;
   updateBookingInternalNote: (bookingId: number, note: string) => void;
@@ -101,16 +107,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSettings);
   const [bookingHistory, setBookingHistory] = useState<BookingHistoryItem[]>([]);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount & verify session from server
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedAuth = localStorage.getItem('bc_admin_auth');
-      if (storedAuth) {
-        const authData = JSON.parse(storedAuth);
-        setIsLoggedIn(true);
-        setAdminUser(authData.username);
-      }
-
       const storedBookings = localStorage.getItem('bc_bookings');
       if (storedBookings) setBookings(JSON.parse(storedBookings));
 
@@ -129,7 +128,25 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const storedHistory = localStorage.getItem('bc_booking_history');
       if (storedHistory) setBookingHistory(JSON.parse(storedHistory));
 
-      setIsMounted(true);
+      // Gọi API Server Action để xác minh JWT session từ cookie httpOnly
+      const checkSession = async () => {
+        try {
+          const authRes = await getAdminInfoAction();
+          if (authRes.success && authRes.admin) {
+            setIsLoggedIn(true);
+            setAdminUser(authRes.admin.fullName);
+          } else {
+            setIsLoggedIn(false);
+            setAdminUser(null);
+          }
+        } catch (err) {
+          setIsLoggedIn(false);
+          setAdminUser(null);
+        } finally {
+          setIsMounted(true);
+        }
+      };
+      checkSession();
     }
   }, []);
 
@@ -140,42 +157,26 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Auth Functions
-  const login = (username: string, password: string) => {
-    // Check locked out status first
-    const lockedUntil = localStorage.getItem('bc_admin_locked_until');
-    if (lockedUntil) {
-      const lockTime = new Date(lockedUntil);
-      if (new Date() < lockTime) {
-        const minutesLeft = Math.ceil((lockTime.getTime() - new Date().getTime()) / 60000);
-        return { success: false, error: `Tài khoản tạm khóa. Vui lòng thử lại sau ${minutesLeft} phút.` };
-      } else {
-        localStorage.removeItem('bc_admin_locked_until');
-        resetFailedLoginAttempts();
-      }
-    }
-
-    if (username === 'admin' && password === 'BaoChau@2026') {
+  // Auth Functions (Đồng bộ với Server-side JWT)
+  const login = async (username: string, password: string) => {
+    const res = await loginAdminAction(username, password);
+    if (res.success) {
       setIsLoggedIn(true);
-      setAdminUser('Bảo Châu Admin');
-      saveToLocal('bc_admin_auth', { loggedIn: true, username: 'Bảo Châu Admin' });
-      resetFailedLoginAttempts();
-      return { success: true };
-    } else {
-      const attempts = incrementFailedLoginAttempts();
-      if (attempts >= 5) {
-        setLockout();
-        return { success: false, error: 'Đăng nhập sai 5 lần liên tiếp. Tài khoản đã bị khóa 15 phút.' };
+      const authRes = await getAdminInfoAction();
+      if (authRes.success && authRes.admin) {
+        setAdminUser(authRes.admin.fullName);
+      } else {
+        setAdminUser('Bảo Châu Admin');
       }
-      return { success: false, error: `Sai tên đăng nhập hoặc mật khẩu. Bạn còn ${5 - attempts} lần thử.` };
     }
+    return res;
   };
 
-  const logout = () => {
-    setIsLoggedIn(false);
-    setAdminUser(null);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('bc_admin_auth');
+  const logout = async () => {
+    const res = await logoutAdminAction();
+    if (res.success) {
+      setIsLoggedIn(false);
+      setAdminUser(null);
     }
   };
 
@@ -212,7 +213,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Bookings CRUD
+  // Bookings CRUD (Quản lý localStorage mock-data)
   const addBooking = (bookingData: Omit<Booking, 'id' | 'code' | 'status'>) => {
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randNum = Math.floor(100 + Math.random() * 900);

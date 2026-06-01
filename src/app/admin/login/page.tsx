@@ -12,12 +12,19 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     if (isMounted && isLoggedIn) {
       router.push('/admin/dashboard');
     }
   }, [isLoggedIn, isMounted, router]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   if (!isMounted) {
     return (
@@ -29,20 +36,24 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting || cooldown > 0) return;
     setErrorMsg('');
     setSubmitting(true);
 
-    // Add a slight artificial delay for UX feel
-    setTimeout(() => {
-      const res = login(username, password);
-      setSubmitting(false);
-      
+    try {
+      const res = await login(username, password);
       if (res.success) {
         router.push('/admin/dashboard');
       } else {
         setErrorMsg(res.error || 'Đăng nhập không thành công.');
+        setCooldown(3);
       }
-    }, 800);
+    } catch (err) {
+      setErrorMsg('Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.');
+      setCooldown(5);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -99,11 +110,13 @@ export default function AdminLoginPage() {
           <div>
             <button
               type="submit"
-              disabled={submitting}
-              className="group relative flex w-full justify-center rounded-2xl bg-amber-500 px-4 py-3.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:bg-amber-500/50"
+              disabled={submitting || cooldown > 0}
+              className="group relative flex w-full justify-center rounded-2xl bg-amber-500 px-4 py-3.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:bg-amber-500/50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-950 border-t-transparent"></div>
+              ) : cooldown > 0 ? (
+                `Thử lại sau ${cooldown}s...`
               ) : (
                 'Đăng nhập hệ thống'
               )}

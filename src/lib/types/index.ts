@@ -28,6 +28,8 @@ export type PricePackage = {
   price: number;
   description: string;
   status: "active" | "hidden";
+  vehicleId?: number;
+  routeId?: number;
 };
 
 export type Booking = {
