@@ -1,3 +1,5 @@
+'use client';
+
 // Landing Page — NhaXeBaoChau
 // Sections: Hero → WhyUs → Routes → Vehicles → PriceList → Testimonials → BookingForm → FAQ → Footer
 import HeroSection  from '@/components/landing/HeroSection';
@@ -9,36 +11,39 @@ import Testimonials from '@/components/landing/Testimonials';
 import BookingForm  from '@/components/landing/BookingForm';
 import FAQ          from '@/components/landing/FAQ';
 import Footer       from '@/components/landing/Footer';
+import { AdminProvider } from '@/context/AdminContext';
 
 export default function HomePage() {
   return (
-    <main>
-      {/* HeroSection đã bao gồm Header bên trong (overlay) */}
-      <HeroSection />
+    <AdminProvider>
+      <main>
+        {/* HeroSection đã bao gồm Header bên trong (overlay) */}
+        <HeroSection />
 
-      {/* Vì sao chọn Bảo Châu */}
-      <WhyUs />
+        {/* Vì sao chọn Bảo Châu */}
+        <WhyUs />
 
-      {/* Tuyến đường + SVG Map + Quick booking */}
-      <Routes />
+        {/* Tuyến đường + SVG Map + Quick booking */}
+        <Routes />
 
-      {/* Đội xe */}
-      <VehicleList />
+        {/* Đội xe */}
+        <VehicleList />
 
-      {/* Bảng giá */}
-      <PriceList />
+        {/* Bảng giá */}
+        <PriceList />
 
-      {/* Đánh giá khách hàng */}
-      <Testimonials />
+        {/* Đánh giá khách hàng */}
+        <Testimonials />
 
-      {/* Form đặt vé */}
-      <BookingForm />
+        {/* Form đặt vé */}
+        <BookingForm />
 
-      {/* FAQ */}
-      <FAQ />
+        {/* FAQ */}
+        <FAQ />
 
-      {/* Footer */}
-      <Footer />
-    </main>
+        {/* Footer */}
+        <Footer />
+      </main>
+    </AdminProvider>
   );
 }

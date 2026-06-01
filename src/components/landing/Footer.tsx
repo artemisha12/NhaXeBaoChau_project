@@ -1,5 +1,15 @@
+import { useAdmin } from "@/context/AdminContext";
+
 export default function Footer() {
+  const { siteSettings } = useAdmin();
   const year = new Date().getFullYear();
+  
+  const hotline = siteSettings?.hotline || "0905 123 456";
+  const zaloPhone = siteSettings?.zaloPhone || "0905 123 456";
+  const officeAddress = siteSettings?.officeAddress || "Huế - Đà Nẵng - Hội An";
+  const workingHours = siteSettings?.workingHours || "06:00 - 22:00";
+  const facebookUrl = siteSettings?.facebookUrl || "https://facebook.com/nhaxebaochau";
+  const zaloOaUrl = siteSettings?.zaloOaUrl || "https://zalo.me/nhaxebaochau";
 
   return (
     <footer id="footer" className="landing-footer">
@@ -37,7 +47,7 @@ export default function Footer() {
             </p>
             <div className="footer-social-row">
               <a
-                href="https://facebook.com"
+                href={facebookUrl}
                 className="footer-social-btn footer-social-btn--fb"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -48,7 +58,7 @@ export default function Footer() {
                 Facebook
               </a>
               <a
-                href="https://zalo.me/0900000000"
+                href={zaloOaUrl}
                 className="footer-social-btn footer-social-btn--zalo"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -71,28 +81,28 @@ export default function Footer() {
                 <ul className="footer-contact-list">
                   <li className="footer-contact-item">
                     <span className="footer-contact-key">Hotline</span>
-                    <a href="tel:0900000000" className="footer-contact-val footer-contact-link">
-                      090.000.0000
+                    <a href={`tel:${hotline.replace(/\s+/g, '')}`} className="footer-contact-val footer-contact-link">
+                      {hotline}
                     </a>
                   </li>
                   <li className="footer-contact-item">
                     <span className="footer-contact-key">Zalo</span>
                     <a
-                      href="https://zalo.me/0900000000"
+                      href={zaloOaUrl}
                       className="footer-contact-val footer-contact-link"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      090.000.0000
+                      {zaloPhone}
                     </a>
                   </li>
                   <li className="footer-contact-item">
                     <span className="footer-contact-key">Địa chỉ</span>
-                    <span className="footer-contact-val">123 Lê Lợi, TP. Huế</span>
+                    <span className="footer-contact-val">{officeAddress}</span>
                   </li>
                   <li className="footer-contact-item">
                     <span className="footer-contact-key">Giờ mở cửa</span>
-                    <span className="footer-contact-val">05:00 – 22:00 hàng ngày</span>
+                    <span className="footer-contact-val">{workingHours}</span>
                   </li>
                 </ul>
               </div>

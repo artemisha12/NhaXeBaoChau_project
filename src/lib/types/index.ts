@@ -42,5 +42,9 @@ export type Booking = {
   passengerCount: number;
   totalPrice: number;
   status: BookingStatus;
+  customerEmail?: string;
+  customerNote?: string;
+  priceAtBooking?: number;
   internalNote?: string;
+  createdAt?: string;
 };
