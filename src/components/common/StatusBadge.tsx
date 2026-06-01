@@ -22,7 +22,7 @@ const statusMap: Record<BookingStatus, { label: string; className: string }> = {
 export default function StatusBadge({ status }: { status: BookingStatus }) {
   const item = statusMap[status];
   return (
-    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${item.className}`}>
+    <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-semibold ring-1 ${item.className}`}>
       {item.label}
     </span>
   );

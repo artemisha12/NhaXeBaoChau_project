@@ -1,19 +1,18 @@
-import Header from '@/components/landing/Header';
-import Hero from '@/components/landing/HeroSection';
-import VehicleList from '@/components/landing/VehicleList';
-import PriceList from '@/components/landing/PriceList';
-import BookingForm from '@/components/landing/BookingForm';
-import Footer from '@/components/landing/Footer';
+'use client';
 
-export default function LandingPage() {
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function AdminPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push('/admin/dashboard');
+  }, [router]);
+
   return (
-    <main>
-      <Header />
-      <Hero />
-      <VehicleList />
-      <PriceList />
-      <BookingForm />
-      <Footer />
-    </main>
+    <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
+    </div>
   );
 }

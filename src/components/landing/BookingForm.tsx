@@ -1,23 +1,86 @@
 'use client';
+
 import { useState } from 'react';
+import { useAdmin } from '@/context/AdminContext';
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("vi-VN").format(value) + "đ";
+}
 
 export default function BookingForm() {
+  const { packages, addBooking } = useAdmin();
   const [submitting, setSubmitting] = useState(false);
   const [bookingCode, setBookingCode] = useState('');
 
+  // Controlled form states
+  const [customerName, setCustomerName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [selectedPkgId, setSelectedPkgId] = useState('');
+  const [pickupAddress, setPickupAddress] = useState('');
+  const [dropoffAddress, setDropoffAddress] = useState('');
+  const [travelDate, setTravelDate] = useState('');
+  const [travelTime, setTravelTime] = useState('');
+  const [passengerCount, setPassengerCount] = useState(1);
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerNote, setCustomerNote] = useState('');
+
+  // Group active packages
+  const activePackages = packages.filter(p => p.status === 'active');
+  const sharedPkgs = activePackages.filter(p => p.type === 'shared-seat');
+  const privatePkgs = activePackages.filter(p => p.type === 'private-trip');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedPkgId) {
+      alert('Vui lòng chọn tuyến đường và gói cước.');
+      return;
+    }
+
+    const selectedPkg = activePackages.find(p => p.id === Number(selectedPkgId));
+    if (!selectedPkg) return;
+
     setSubmitting(true);
+
+    // Calculate total price
+    const unitPrice = selectedPkg.price;
+    const isShared = selectedPkg.type === 'shared-seat';
+    const totalPrice = isShared ? unitPrice * passengerCount : unitPrice;
+
+    // Simulate network submission delay
     setTimeout(() => {
-      const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const seq = String(Math.floor(Math.random() * 900) + 100);
-      setBookingCode(`BC-${today}-${seq}`);
+      const newBooking = addBooking({
+        customerName,
+        phone,
+        routeName: selectedPkg.routeName,
+        travelDate,
+        pickupAddress,
+        dropoffAddress,
+        passengerCount,
+        totalPrice,
+        priceAtBooking: unitPrice,
+        customerEmail,
+        customerNote,
+      });
+
+      setBookingCode(newBooking.code);
       setSubmitting(false);
-    }, 900);
+
+      // Reset form fields
+      setCustomerName('');
+      setPhone('');
+      setSelectedPkgId('');
+      setPickupAddress('');
+      setDropoffAddress('');
+      setTravelDate('');
+      setTravelTime('');
+      setPassengerCount(1);
+      setCustomerEmail('');
+      setCustomerNote('');
+    }, 1000);
   };
 
   return (
-    <section id="booking-section" className="section section-soft">
+    <section id="booking-section" className="section section-soft font-sans">
       <div className="container">
         <div className="booking-layout">
           {/* Left intro */}
@@ -106,46 +169,87 @@ export default function BookingForm() {
                   <div className="booking-grid">
                     <div className="form-group">
                       <label className="form-label">Họ và tên <span className="req">*</span></label>
-                      <input type="text" className="form-input" placeholder="Nguyễn Văn A" required />
+                      <input 
+                        type="text" 
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="form-input" 
+                        placeholder="Nguyễn Văn A" 
+                        required 
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Số điện thoại <span className="req">*</span></label>
-                      <input type="tel" className="form-input" placeholder="09x xxx xxxx" pattern="[0-9]{10}" required />
+                      <input 
+                        type="tel" 
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="form-input" 
+                        placeholder="09x xxx xxxx" 
+                        pattern="[0-9]{10}" 
+                        required 
+                      />
                     </div>
 
                     <div className="form-group booking-full">
                       <label className="form-label">Chọn tuyến &amp; gói <span className="req">*</span></label>
-                      <select className="form-select" required>
-                        <option value="">-- Chọn tuyến đường --</option>
-                        <optgroup label="Xe ghép theo chỗ">
-                          <option>Huế → Đà Nẵng (Xe ghép · 200.000đ/người)</option>
-                          <option>Đà Nẵng → Huế (Xe ghép · 200.000đ/người)</option>
-                          <option>Đà Nẵng → Hội An (Xe ghép · 150.000đ/người)</option>
-                          <option>Huế → Hội An (Xe ghép · 300.000đ/người)</option>
-                          <option>Sân bay Phú Bài → Đà Nẵng (250.000đ/người)</option>
-                        </optgroup>
-                        <optgroup label="Bao chuyến nguyên xe">
-                          <option>Huế → Đà Nẵng (Bao 7 chỗ · 1.200.000đ)</option>
-                          <option>Huế → Đà Nẵng (Bao 16 chỗ · 2.000.000đ)</option>
-                          <option>Huế → Hội An (Bao 7 chỗ · 1.800.000đ)</option>
-                          <option>Đà Nẵng → Hội An (Bao 7 chỗ · 800.000đ)</option>
-                        </optgroup>
+                      <select 
+                        className="form-select" 
+                        value={selectedPkgId}
+                        onChange={(e) => setSelectedPkgId(e.target.value)}
+                        required
+                      >
+                        <option value="">-- Chọn tuyến đường &amp; Gói cước --</option>
+                        {sharedPkgs.length > 0 && (
+                          <optgroup label="Xe ghép theo chỗ (Đón trả tận nhà)">
+                            {sharedPkgs.map(pkg => (
+                              <option key={pkg.id} value={pkg.id}>
+                                {pkg.routeName} ({pkg.vehicleName} · {formatMoney(pkg.price)}/ghế)
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {privatePkgs.length > 0 && (
+                          <optgroup label="Bao chuyến nguyên xe (Không ghép khách)">
+                            {privatePkgs.map(pkg => (
+                              <option key={pkg.id} value={pkg.id}>
+                                {pkg.routeName} ({pkg.vehicleName} · {formatMoney(pkg.price)}/chuyến)
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     </div>
 
                     <div className="form-group">
                       <label className="form-label">Địa chỉ đón <span className="req">*</span></label>
-                      <input type="text" className="form-input" placeholder="Số nhà, tên đường, phường..." required />
+                      <input 
+                        type="text" 
+                        value={pickupAddress}
+                        onChange={(e) => setPickupAddress(e.target.value)}
+                        className="form-input" 
+                        placeholder="Số nhà, tên đường, phường..." 
+                        required 
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Địa chỉ trả <span className="req">*</span></label>
-                      <input type="text" className="form-input" placeholder="Số nhà, tên đường, phường..." required />
+                      <input 
+                        type="text" 
+                        value={dropoffAddress}
+                        onChange={(e) => setDropoffAddress(e.target.value)}
+                        className="form-input" 
+                        placeholder="Số nhà, tên đường, phường..." 
+                        required 
+                      />
                     </div>
 
                     <div className="form-group">
                       <label className="form-label">Ngày đi <span className="req">*</span></label>
                       <input
                         type="date"
+                        value={travelDate}
+                        onChange={(e) => setTravelDate(e.target.value)}
                         className="form-input"
                         min={new Date().toISOString().split('T')[0]}
                         required
@@ -153,21 +257,42 @@ export default function BookingForm() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Giờ đi (dự kiến)</label>
-                      <input type="time" className="form-input" />
+                      <input 
+                        type="time" 
+                        value={travelTime}
+                        onChange={(e) => setTravelTime(e.target.value)}
+                        className="form-input" 
+                      />
                     </div>
 
                     <div className="form-group">
                       <label className="form-label">Số hành khách <span className="req">*</span></label>
-                      <input type="number" className="form-input" min="1" max="16" defaultValue="1" required />
+                      <input 
+                        type="number" 
+                        value={passengerCount}
+                        onChange={(e) => setPassengerCount(Number(e.target.value))}
+                        className="form-input" 
+                        min="1" 
+                        max="16" 
+                        required 
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Email (nhận xác nhận)</label>
-                      <input type="email" className="form-input" placeholder="email@gmail.com" />
+                      <input 
+                        type="email" 
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        className="form-input" 
+                        placeholder="email@gmail.com" 
+                      />
                     </div>
 
                     <div className="form-group booking-full">
                       <label className="form-label">Ghi chú thêm</label>
                       <textarea
+                        value={customerNote}
+                        onChange={(e) => setCustomerNote(e.target.value)}
                         className="form-textarea"
                         placeholder="Ví dụ: có trẻ em, mang nhiều hành lý, cần xe sớm 5:30..."
                       />

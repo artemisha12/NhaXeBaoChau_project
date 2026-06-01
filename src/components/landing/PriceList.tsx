@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useAdmin } from '@/context/AdminContext';
 
 const PRICES = [
   // shared (Đi ghép)
@@ -146,8 +147,45 @@ function formatMoney(n: number) {
 }
 
 export default function PriceList() {
+  const { packages } = useAdmin();
   const [tab, setTab] = useState<'shared' | 'charter'>('shared');
   const [carFilter, setCarFilter] = useState<string>('all');
+
+  const activePackages = packages.filter(pkg => pkg.status === 'active');
+  const dynamicPrices = activePackages.map(pkg => {
+    const isShared = pkg.type === 'shared-seat';
+    let category = 'sedan';
+    let vehicleSub = '';
+    const vName = pkg.vehicleName.toLowerCase();
+    
+    if (vName.includes('limousine') || vName.includes('9 chỗ') || vName.includes('vip')) {
+      category = 'limousine';
+      vehicleSub = 'Limousine (9 chỗ)';
+    } else if (vName.includes('carnival') || vName.includes('7 chỗ')) {
+      category = 'carnival';
+      vehicleSub = 'Limousine (7 chỗ)';
+    } else if (vName.includes('transit') || vName.includes('16 chỗ') || vName.includes('minivan')) {
+      category = 'transit';
+      vehicleSub = 'Minibus (16 chỗ)';
+    } else {
+      category = 'sedan';
+      vehicleSub = 'Sedan (4 chỗ)';
+    }
+
+    return {
+      id: `pkg-${pkg.id}`,
+      type: isShared ? 'shared' : 'charter',
+      category,
+      route: pkg.routeName.replace('→', '⇄'),
+      vehicleName: pkg.vehicleName,
+      vehicleSub,
+      info: pkg.description || 'Xe đời mới • Đón trả tận nơi',
+      price: pkg.price,
+      unit: isShared ? '/ghế' : '/chuyến',
+    };
+  });
+
+  const displayPrices = dynamicPrices.length > 0 ? dynamicPrices : PRICES;
 
   const handleTabChange = (newTab: 'shared' | 'charter') => {
     setTab(newTab);
@@ -168,7 +206,7 @@ export default function PriceList() {
     };
   }, []);
 
-  const filteredPrices = PRICES.filter(
+  const filteredPrices = displayPrices.filter(
     (p) => p.type === tab && (carFilter === 'all' || p.category === carFilter)
   );
 

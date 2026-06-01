@@ -1,6 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
+
+const RealMap = dynamic(() => import('./RealMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-slate-50/50" style={{ height: '380px' }}>
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#c88925] border-t-transparent"></div>
+    </div>
+  ),
+});
 
 const ROUTES_DATA = [
   { from: 'Huế', to: 'Đà Nẵng', note: '~2 giờ · 100 km', key: 'hue-danang' },
@@ -119,72 +129,7 @@ export default function Routes() {
           {/* RIGHT — SVG Map */}
           <div className="routes-map-col animate-fade-right">
             <div className="svg-map-container">
-              <svg
-                viewBox="0 0 500 420"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{ width: '100%', height: '100%', padding: '20px' }}
-              >
-                {/* Background */}
-                <rect width="500" height="420" fill="url(#mapGrad)" rx="16" />
-                <defs>
-                  <linearGradient id="mapGrad" x1="0" y1="0" x2="500" y2="420" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#edf4f7" />
-                    <stop offset="100%" stopColor="#eafafa" />
-                  </linearGradient>
-                  <linearGradient id="routeLine" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#e5aa35" />
-                    <stop offset="100%" stopColor="#0c7f8d" />
-                  </linearGradient>
-                </defs>
-
-                {/* Route path */}
-                <path
-                  d="M 160 80 Q 200 200 250 260 Q 290 310 330 360"
-                  stroke="url(#routeLine)"
-                  strokeWidth="3"
-                  strokeDasharray="8 5"
-                  strokeLinecap="round"
-                />
-
-                {/* Hue dot */}
-                <circle cx="160" cy="80" r="14" fill="#e5aa35" opacity="0.2" />
-                <circle cx="160" cy="80" r="8" fill="#c88925" />
-                <circle cx="160" cy="80" r="4" fill="#fff" />
-                <text x="178" y="76" fill="#04101b" fontSize="14" fontWeight="800" fontFamily="Be Vietnam Pro, sans-serif">Huế</text>
-                <text x="178" y="92" fill="#726b63" fontSize="11" fontFamily="Be Vietnam Pro, sans-serif">Cố đô trầm mặc</text>
-
-                {/* Da Nang dot */}
-                <circle cx="250" cy="260" r="14" fill="#c88925" opacity="0.2" />
-                <circle cx="250" cy="260" r="8" fill="#e5aa35" />
-                <circle cx="250" cy="260" r="4" fill="#fff" />
-                <text x="268" y="256" fill="#04101b" fontSize="14" fontWeight="800" fontFamily="Be Vietnam Pro, sans-serif">Đà Nẵng</text>
-                <text x="268" y="272" fill="#726b63" fontSize="11" fontFamily="Be Vietnam Pro, sans-serif">Thành phố đáng sống</text>
-
-                {/* Hoi An dot */}
-                <circle cx="330" cy="360" r="14" fill="#0c7f8d" opacity="0.2" />
-                <circle cx="330" cy="360" r="8" fill="#0c7f8d" />
-                <circle cx="330" cy="360" r="4" fill="#fff" />
-                <text x="348" y="356" fill="#04101b" fontSize="14" fontWeight="800" fontFamily="Be Vietnam Pro, sans-serif">Hội An</text>
-                <text x="348" y="372" fill="#726b63" fontSize="11" fontFamily="Be Vietnam Pro, sans-serif">Phố cổ yên bình</text>
-
-                {/* Distance labels */}
-                <rect x="60" y="155" width="72" height="22" rx="11" fill="rgba(200,137,37,0.12)" />
-                <text x="96" y="170" fill="#a86e19" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="Be Vietnam Pro, sans-serif">~2 giờ</text>
-
-                <rect x="285" y="295" width="72" height="22" rx="11" fill="rgba(12,127,141,0.12)" />
-                <text x="321" y="310" fill="#096674" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="Be Vietnam Pro, sans-serif">~45 phút</text>
-
-                {/* Car icon */}
-                <g transform="translate(182, 166)">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e5aa35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-                    <circle cx="7" cy="17" r="2" />
-                    <path d="M9 17h6" />
-                    <circle cx="17" cy="17" r="2" />
-                  </svg>
-                </g>
-              </svg>
+              <RealMap />
             </div>
           </div>
         </div>

@@ -1,0 +1,349 @@
+
+
+
+NHÀ XE BẢO CHÂU
+TÀI LIỆU MÔ TẢ CHỨC NĂNG WEBSITE
+Landing Page  +  Admin Dashboard
+
+Dịch vụ xe ghép liên tỉnh   •   Đặt vé trực tuyến   •   Quản lý vận hành
+
+
+Tài liệu dành cho nhân viên thiết kế SQL & lập trình back-end
+
+Tổng quan hệ thống
+
+Website Nhà xe Bảo Châu gồm 2 phần chính:
+
+Phần
+Ai sử dụng
+Mục đích chính
+Landing Page
+Khách hàng (công khai)
+Xem thông tin xe, bảng giá, gửi yêu cầu đặt vé
+Admin Dashboard
+Nhân viên / Quản lý nội bộ
+Nhận đơn, xử lý vé, quản lý xe, cập nhật giá
+
+💡 Hai phần hoạt động độc lập nhau. Khách hàng không thấy trang Admin. Nhân viên đăng nhập riêng để vào Dashboard.
+
+PHẦN 1 — LANDING PAGE (Trang công khai)
+
+Đây là trang web mà khách hàng truy cập. Không cần đăng nhập. Gồm các khu vực sau:
+
+1.1  Khu vực Header (Đầu trang)
+Hiển thị cố định ở đầu mỗi trang, gồm:
+Logo Nhà xe Bảo Châu
+Số điện thoại hotline nổi bật (bấm vào gọi ngay trên điện thoại)
+Nút "Đặt vé ngay" — khi nhấn sẽ cuộn xuống form đặt vé
+
+1.2  Khu vực Banner / Giới thiệu
+Phần đầu tiên khách hàng nhìn thấy khi vào trang:
+Ảnh hoặc banner quảng bá dịch vụ xe ghép liên tỉnh
+Câu slogan ngắn gọn, ấn tượng
+Nút kêu gọi hành động (CTA): "Xem bảng giá" và "Đặt vé ngay"
+
+1.3  Khu vực Danh sách Xe
+Hiển thị các xe mà Nhà xe Bảo Châu đang sử dụng:
+Mỗi xe hiển thị: ảnh xe, tên xe (Xe A, Xe B,...), loại xe, số chỗ ngồi, mô tả tiện nghi
+Chỉ hiển thị xe đang hoạt động (xe bị ẩn sẽ không xuất hiện)
+Admin có thể thêm/sửa/ẩn xe từ Dashboard — trang này tự động cập nhật
+
+1.4  Khu vực Bảng Giá
+Hiển thị toàn bộ các gói cước vận chuyển. Có 2 loại gói:
+
+Loại gói
+Mô tả
+Ví dụ
+Xe ghép (theo chỗ)
+Khách mua từng chỗ ngồi, có thể đi cùng người lạ
+Xe A — Huế → Đà Nẵng: 200.000đ/người
+Bao chuyến (nguyên xe)
+Khách thuê toàn bộ xe, đi riêng theo lịch tự chọn
+Xe A — Huế → Hội An: 1.200.000đ/chuyến
+
+Bảng giá được nhóm theo tuyến đường để dễ tra cứu
+Admin cập nhật giá từ Dashboard — Landing Page tự động hiển thị giá mới
+
+1.5  Khu vực Form Đặt Vé
+Phần quan trọng nhất — nơi khách hàng gửi yêu cầu đặt chuyến. Các trường thông tin trong form:
+
+Trường thông tin
+Bắt buộc?
+Ghi chú
+Họ và tên
+Có
+
+Số điện thoại
+Có
+Kiểm tra đúng định dạng số Việt Nam
+Email
+Không
+Tuỳ chọn
+Chọn gói / Tuyến đường
+Có
+Danh sách thả xuống: tuyến + xe + loại gói
+Địa chỉ đón
+Có
+Khách nhập địa chỉ cụ thể
+Địa chỉ trả
+Có
+Khách nhập địa chỉ cụ thể
+Ngày đi
+Có
+Lịch chọn ngày, không cho chọn ngày đã qua
+Giờ đi dự kiến
+Không
+Tuỳ chọn
+Số lượng hành khách
+Có
+Mặc định = 1
+Ghi chú thêm
+Không
+Ví dụ: có trẻ nhỏ, mang hàng hoá...
+
+💡 Sau khi khách bấm "Gửi yêu cầu", hệ thống tự tạo mã đơn (ví dụ: BC-20240615-001) và lưu vào danh sách chờ xử lý trong Admin Dashboard.
+
+1.6  Khu vực Footer (Chân trang)
+Địa chỉ văn phòng Nhà xe Bảo Châu
+Số điện thoại, Zalo hỗ trợ
+Giờ hoạt động
+Liên kết mạng xã hội (Facebook, Zalo OA nếu có)
+💡 Toàn bộ thông tin footer được quản lý từ Admin Dashboard, không cần can thiệp code khi cần thay đổi số điện thoại hay địa chỉ.
+
+PHẦN 2 — ADMIN DASHBOARD (Trang quản trị nội bộ)
+
+Trang quản trị dành riêng cho nhân viên và quản lý. Truy cập qua đường dẫn riêng (ví dụ: website.com/admin), yêu cầu đăng nhập bằng tài khoản được cấp.
+
+2.1  Đăng nhập Admin
+Nhập tên đăng nhập và mật khẩu
+Đăng nhập sai 5 lần liên tiếp → tạm khóa 15 phút
+Đăng xuất khi không sử dụng
+
+2.2  Trang chủ Dashboard (Tổng quan)
+Màn hình đầu tiên sau khi đăng nhập — hiển thị nhanh các số liệu quan trọng:
+Số đơn đặt vé mới hôm nay (chưa xử lý)
+Tổng đơn đang chờ xác nhận
+Tổng đơn trong tuần / tháng
+Danh sách 5-10 đơn mới nhất để xử lý nhanh
+
+2.3  Quản lý Đơn Đặt Vé
+Đây là chức năng nhân viên sử dụng nhiều nhất hàng ngày.
+
+Danh sách đơn
+Hiển thị toàn bộ đơn đặt vé từ khách hàng gửi qua form
+Mặc định xếp theo thứ tự mới nhất lên trên
+Mỗi dòng gồm: mã đơn, tên khách, SĐT, tuyến đường, ngày đi, trạng thái
+
+Lọc & Tìm kiếm
+Lọc theo trạng thái: Mới gửi / Đã xác nhận / Hoàn thành / Đã huỷ
+Lọc theo tuyến đường
+Lọc theo ngày đặt hoặc ngày đi
+Tìm theo tên khách hoặc số điện thoại
+
+Xem chi tiết đơn
+Nhấn vào một đơn để xem toàn bộ thông tin: thông tin khách, điểm đón/trả, ghi chú...
+Thấy được giá tại thời điểm khách đặt (không bị thay đổi khi giá cập nhật sau)
+
+Cập nhật trạng thái đơn
+Mỗi đơn có 4 trạng thái, nhân viên tự thay đổi theo tiến trình xử lý:
+
+Trạng thái
+Ý nghĩa
+Khi nào chuyển?
+🟡  Mới gửi
+Đơn vừa vào, chưa ai xử lý
+Tự động khi khách gửi form
+🟢  Đã xác nhận
+Đã liên hệ khách, chốt chuyến
+Sau khi gọi điện xác nhận với khách
+✅  Hoàn thành
+Chuyến đã chạy xong
+Sau khi khách đã đến nơi
+❌  Đã huỷ
+Đơn không thực hiện được
+Khách huỷ hoặc không liên hệ được
+
+Ghi chú nội bộ
+Nhân viên có thể ghi chú riêng vào từng đơn (khách không nhìn thấy)
+Ví dụ: "Đã gọi 2 lần, không bắt máy", "Khách đổi giờ sang 8h"
+
+2.4  Quản lý Xe
+Xem danh sách tất cả xe
+Thêm xe mới: nhập tên xe, loại xe, số chỗ, mô tả, upload ảnh
+Sửa thông tin xe
+Ẩn xe (không xoá — để giữ lại lịch sử đơn cũ liên quan tới xe đó)
+
+2.5  Quản lý Tuyến Đường
+Xem danh sách các tuyến đường đang vận hành
+Thêm tuyến mới: tên điểm đi, điểm đến, quãng đường (km), thời gian ước tính
+Sửa / Ẩn tuyến khi không còn hoạt động
+
+2.6  Quản lý Gói Giá
+Xem danh sách tất cả các gói đang có (ghép + bao chuyến)
+Thêm gói mới: chọn xe + chọn tuyến + chọn loại (ghép / bao chuyến) + nhập giá + mô tả
+Sửa giá, cập nhật mô tả gói
+Ẩn gói theo thời vụ (ví dụ: gói lễ Tết tạm thời ẩn sau mùa cao điểm)
+💡 Giá cập nhật ở đây sẽ tự động hiển thị trên bảng giá của Landing Page. Nhưng các đơn đã đặt trước đó vẫn giữ nguyên giá cũ.
+
+2.7  Cài đặt Thông tin Website
+Admin chỉnh sửa nội dung hiển thị trên Landing Page mà không cần nhờ lập trình viên:
+Số điện thoại hotline
+Số Zalo hỗ trợ
+Địa chỉ văn phòng
+Giờ làm việc
+Slogan / câu giới thiệu trên banner
+
+
+PHẦN 3 — CÁC LUỒNG HOẠT ĐỘNG CHÍNH (User Flows)
+
+Flow 1 — Khách hàng đặt vé
+Mô tả từng bước khi khách truy cập website và gửi yêu cầu đặt vé:
+
+Bước
+Ai làm
+Hành động
+Kết quả
+1
+Khách hàng
+Truy cập website Nhà xe Bảo Châu
+Thấy Landing Page với banner, danh sách xe, bảng giá
+2
+Khách hàng
+Xem bảng giá, chọn tuyến phù hợp
+Biết được giá vé ghép hoặc bao chuyến
+3
+Khách hàng
+Cuộn xuống / Nhấn nút "Đặt vé ngay"
+Form đặt vé xuất hiện
+4
+Khách hàng
+Điền đầy đủ thông tin: tên, SĐT, tuyến, ngày đi, địa chỉ đón-trả...
+Form được điền xong
+5
+Khách hàng
+Nhấn nút "Gửi yêu cầu"
+Form gửi đi, hiện thông báo: "Nhà xe đã nhận yêu cầu, sẽ liên hệ bạn sớm"
+6
+Hệ thống
+Tự động tạo mã đơn (BC-YYYYMMDD-XXX), lưu vào cơ sở dữ liệu với trạng thái "Mới gửi"
+Đơn xuất hiện ngay trong danh sách Admin Dashboard
+
+Flow 2 — Nhân viên xử lý đơn đặt vé
+Sau khi đơn vào hệ thống, nhân viên nhà xe thực hiện các bước sau:
+
+Bước
+Ai làm
+Hành động
+Kết quả
+1
+Nhân viên
+Đăng nhập vào Admin Dashboard
+Thấy trang tổng quan, thấy số đơn mới
+2
+Nhân viên
+Vào mục "Quản lý đơn đặt vé", lọc đơn trạng thái "Mới gửi"
+Danh sách các đơn chưa xử lý
+3
+Nhân viên
+Nhấn vào đơn để xem chi tiết: tên khách, SĐT, tuyến, giờ đi, địa chỉ đón...
+Xem đầy đủ thông tin khách hàng
+4
+Nhân viên
+Gọi điện xác nhận với khách hàng theo số SĐT trên đơn
+Xác nhận hoặc điều chỉnh lịch
+5
+Nhân viên
+Chuyển trạng thái đơn từ "Mới gửi" → "Đã xác nhận"
+Đơn được đánh dấu đã xử lý
+6
+Nhân viên
+Ghi ghi chú nội bộ nếu cần (ví dụ: đổi giờ, yêu cầu đặc biệt)
+Ghi chú lưu lại để nhân viên khác cũng biết
+7
+Nhân viên
+Sau khi chuyến hoàn thành, chuyển trạng thái → "Hoàn thành"
+Đơn được lưu trữ trong lịch sử
+
+Flow 3 — Admin cập nhật bảng giá
+Khi cần thêm tuyến mới hoặc điều chỉnh giá:
+
+Bước
+Ai làm
+Hành động
+Kết quả
+1
+Admin
+Đăng nhập Dashboard, vào mục "Quản lý Gói Giá"
+Thấy toàn bộ gói giá hiện tại
+2
+Admin
+Nhấn "Thêm gói mới" hoặc chọn gói cần sửa
+Form nhập thông tin gói giá
+3
+Admin
+Chọn xe, chọn tuyến, chọn loại gói (ghép / bao chuyến), nhập giá mới
+Điền xong thông tin
+4
+Admin
+Lưu lại
+Gói giá mới / giá mới tự động hiển thị trên Landing Page ngay lập tức
+5
+Hệ thống
+Các đơn đặt vé cũ vẫn giữ nguyên giá tại thời điểm đặt
+Không ảnh hưởng đến đơn cũ
+
+Flow 4 — Admin thêm xe mới
+
+Bước
+Ai làm
+Hành động
+Kết quả
+1
+Admin
+Vào mục "Quản lý Xe", nhấn "Thêm xe mới"
+Form nhập thông tin xe
+2
+Admin
+Nhập tên xe, loại xe, số chỗ, mô tả tiện nghi, upload ảnh
+Điền xong thông tin
+3
+Admin
+Nhấn lưu
+Xe mới xuất hiện trong danh sách xe trên Landing Page
+4
+Admin
+Vào mục "Quản lý Gói Giá", tạo gói giá gắn với xe mới vừa thêm
+Xe có giá → hiển thị đầy đủ trong bảng giá
+
+
+PHẦN 4 — TÓM TẮT DỮ LIỆU CẦN LƯU TRỮ
+
+Tổng hợp các nhóm dữ liệu chính để nhân viên thiết kế SQL nắm rõ:
+
+Nhóm dữ liệu
+Thông tin cần lưu
+Liên kết với nhau
+Xe (Vehicles)
+Tên xe, biển số, loại, số chỗ, ảnh, mô tả, trạng thái hoạt động
+Một xe → nhiều gói giá
+Tuyến đường (Routes)
+Điểm đi, điểm đến, quãng đường, thời gian đi
+Một tuyến → nhiều gói giá
+Gói giá (Packages)
+Xe + Tuyến + Loại gói + Giá + Mô tả + Trạng thái
+Một gói → nhiều đơn đặt vé
+Đơn đặt vé (Bookings)
+Mã đơn, tên khách, SĐT, email, địa chỉ đón/trả, ngày giờ đi, số khách, tổng tiền, trạng thái, ghi chú nội bộ
+Mỗi đơn thuộc về 1 gói giá
+Tài khoản Admin
+Tên đăng nhập, mật khẩu (mã hoá), tên hiển thị, phân quyền
+Không liên kết trực tiếp
+Cài đặt trang (Settings)
+Hotline, Zalo, địa chỉ, giờ mở cửa, slogan...
+Không liên kết trực tiếp
+
+💡 Quan hệ: Xe + Tuyến → tạo ra Gói giá. Khách chọn Gói giá → tạo ra Đơn đặt vé.
+
+
+— Hết tài liệu —
+Có thắc mắc liên hệ trực tiếp team trước khi bắt đầu thiết kế CSDL.

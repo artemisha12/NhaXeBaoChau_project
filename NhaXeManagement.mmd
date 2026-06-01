@@ -1,0 +1,119 @@
+erDiagram
+
+    ADMINS {
+        int admin_id PK
+        int information_id FK
+        string username UK
+        string password_hash
+        string role
+        int failed_login_attempts
+        datetime locked_until
+        boolean is_active
+        boolean is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    ADMIN_INFORMATION {
+        int information_id PK
+        string full_name
+        string phone
+        string email
+        string address
+        string position
+        string avatar_url
+        boolean is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    VEHICLES {
+        int vehicle_id PK
+        string vehicle_name
+        string license_plate UK
+        string vehicle_type
+        int seat_count
+        string image_url
+        text description
+        boolean is_active
+        boolean is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    ROUTES {
+        int route_id PK
+        string departure_point
+        string destination_point
+        float distance_km
+        string estimated_duration
+        boolean is_active
+        boolean is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    PACKAGES {
+        int package_id PK
+        int vehicle_id FK
+        int route_id FK
+        string package_type
+        decimal price
+        text description
+        boolean is_active
+        boolean is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    BOOKINGS {
+        int booking_id PK
+        string booking_code UK
+        int package_id FK
+        string customer_name
+        string customer_phone
+        string customer_email
+        string pickup_address
+        string dropoff_address
+        date departure_date
+        int passenger_count
+        decimal price_at_booking
+        decimal total_amount
+        string status
+        text customer_note
+        text internal_note
+        boolean is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    BOOKING_STATUS_HISTORY {
+        int history_id PK
+        int booking_id FK
+        int admin_id FK
+        string old_status
+        string new_status
+        text note
+        boolean is_deleted
+        datetime changed_at
+    }
+
+    SITE_SETTINGS {
+        int setting_id PK
+        string hotline
+        string zalo_phone
+        text office_address
+        string working_hours
+        string banner_slogan
+        string facebook_url
+        string zalo_oa_url
+        boolean is_deleted
+        datetime updated_at
+    }
+
+    ADMIN_INFORMATION ||--|| ADMINS : "thong tin dang nhap"
+    VEHICLES ||--o{ PACKAGES : "co nhieu goi gia"
+    ROUTES ||--o{ PACKAGES : "co nhieu goi gia"
+    PACKAGES ||--o{ BOOKINGS : "duoc khach dat"
+    BOOKINGS ||--o{ BOOKING_STATUS_HISTORY : "co lich su trang thai"
+    ADMINS ||--o{ BOOKING_STATUS_HISTORY : "cap nhat trang thai"
