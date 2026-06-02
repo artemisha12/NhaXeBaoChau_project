@@ -20,19 +20,23 @@ export default function TodaySchedule() {
 
   const todayStr = getLocalDateString(new Date());
 
-  // Filter for today's active trips
-  const todayTrips = bookings.filter((b) => 
-    b.travelDate === todayStr && b.status !== 'cancelled'
-  );
+  // Filter for today's active trips, sorted chronologically by departure time
+  const todayTrips = bookings
+    .filter((b) => b.travelDate === todayStr && b.status !== 'cancelled')
+    .sort((a, b) => {
+      const timeA = a.travelTime || '00:00';
+      const timeB = b.travelTime || '00:00';
+      return timeA.localeCompare(timeB);
+    });
 
   return (
-    <div className="rounded-3xl border border-[#e8dccb] bg-[#fffdf8] p-5 shadow-sm font-sans h-full flex flex-col">
-      <div className="flex items-center justify-between border-b border-[#e8dccb] pb-4">
+    <div className="rounded-3xl bg-[#fffdf8] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] font-sans h-full flex flex-col border-none">
+      <div className="flex items-center justify-between border-b border-[#e8dccb]/30 pb-4">
         <div>
           <h3 className="text-base font-black text-[#102033]">Lịch chuyến hôm nay</h3>
           <p className="text-xs text-[#5f6b76] mt-0.5">Danh sách các cuốc xe chạy trong ngày.</p>
         </div>
-        <span className="rounded-xl bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-700 border border-amber-500/20">
+        <span className="rounded-xl bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-700">
           {todayTrips.length} chuyến
         </span>
       </div>
@@ -44,15 +48,22 @@ export default function TodaySchedule() {
             return (
               <div 
                 key={trip.id} 
-                className={`rounded-2xl border p-4 transition ${
+                className={`rounded-2xl p-4 transition duration-200 shadow-[0_4px_16px_rgba(16,32,51,0.02)] border-none ${
                   isNew 
-                    ? 'border-amber-400 bg-amber-500/5' 
-                    : 'border-[#e8dccb]/70 bg-[#fbfaf7]'
+                    ? 'bg-amber-500/5' 
+                    : 'bg-[#fbfaf7] hover:bg-[#f6efe1]/30'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{trip.code}</span>
+                    <div className="flex items-center gap-1.5">
+                      {trip.travelTime && (
+                        <span className="rounded bg-indigo-50 text-indigo-700 px-1.5 py-0.5 text-[10px] font-black shrink-0">
+                          {trip.travelTime}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{trip.code}</span>
+                    </div>
                     <h4 className="font-bold text-[#102033] mt-0.5 text-sm">{trip.customerName}</h4>
                   </div>
                   <StatusBadge status={trip.status} />
@@ -77,11 +88,10 @@ export default function TodaySchedule() {
                   </p>
                 </div>
 
-                <div className="mt-3.5 pt-3 border-t border-[#e8dccb]/50 flex items-center justify-between">
-                  <span className="text-xs font-black text-[#102033]">{formatMoney(trip.totalPrice)}</span>
+                <div className="mt-3.5 pt-3 border-t border-[#e8dccb]/20 flex items-center justify-end">
                   <a 
                     href={`tel:${trip.phone}`} 
-                    className="rounded-xl bg-[#04101b] hover:bg-[#123047] text-white px-3 py-1.5 text-[11px] font-bold transition flex items-center gap-1"
+                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-[11px] font-bold transition flex items-center gap-1 border-none shadow-[0_2px_6px_rgba(16,185,129,0.2)]"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.7 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />

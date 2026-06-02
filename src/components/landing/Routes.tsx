@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useAdmin } from '@/context/AdminContext';
 
 const RealMap = dynamic(() => import('./RealMap'), {
   ssr: false,
@@ -22,9 +23,12 @@ const ROUTES_DATA = [
 const HOURS = Array.from({ length: 17 }, (_, i) => `${String(i + 5).padStart(2, '0')}:00`);
 
 export default function Routes() {
+  const { packages, addBooking } = useAdmin();
+
   const [open, setOpen] = useState(false);
   const [routeLabel, setRouteLabel] = useState('');
   const [tripType, setTripType] = useState<'shared' | 'private'>('shared');
+  const [selectedPkgId, setSelectedPkgId] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [pickup, setPickup] = useState('');
@@ -34,19 +38,81 @@ export default function Routes() {
   const [pax, setPax] = useState('1');
   const [sent, setSent] = useState(false);
 
+  // Map client tripType to admin package type
+  const mappedType = tripType === 'shared' ? 'shared-seat' : 'private-trip';
+  
+  // Filter active packages for selected route and type
+  const activePackages = packages.filter(p => p.status === 'active');
+  const routePackages = activePackages.filter(
+    p => p.routeName === routeLabel && p.type === mappedType
+  );
+
+  // Sync selectedPkgId when routeLabel, tripType or packages change
+  useEffect(() => {
+    if (routePackages.length > 0) {
+      const exists = routePackages.some(p => String(p.id) === selectedPkgId);
+      if (!exists) {
+        setSelectedPkgId(String(routePackages[0].id));
+      }
+    } else {
+      setSelectedPkgId('');
+    }
+  }, [routeLabel, tripType, packages]);
+
   function openModal(label: string) {
     setRouteLabel(label);
+    const mappedT = tripType === 'shared' ? 'shared-seat' : 'private-trip';
+    const pkgs = packages.filter(p => p.status === 'active' && p.routeName === label && p.type === mappedT);
+    if (pkgs.length > 0) {
+      setSelectedPkgId(String(pkgs[0].id));
+    } else {
+      setSelectedPkgId('');
+    }
     setOpen(true);
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!selectedPkgId) {
+      alert('Vui lòng chọn tuyến đường và gói xe.');
+      return;
+    }
+
+    const selectedPkg = activePackages.find(p => String(p.id) === selectedPkgId);
+    if (!selectedPkg) return;
+
     setSent(true);
+
+    const unitPrice = selectedPkg.price;
+    const isShared = selectedPkg.type === 'shared-seat';
+    const totalPrice = isShared ? unitPrice * Number(pax) : unitPrice;
+
     setTimeout(() => {
-      setOpen(false); setSent(false);
-      setName(''); setPhone(''); setPickup(''); setDropoff('');
-      setDate(''); setTime('07:00'); setPax('1');
-    }, 2200);
+      addBooking({
+        customerName: name,
+        phone,
+        routeName: selectedPkg.routeName,
+        travelDate: date,
+        travelTime: time,
+        pickupAddress: pickup,
+        dropoffAddress: dropoff,
+        passengerCount: Number(pax),
+        totalPrice,
+        priceAtBooking: unitPrice,
+      });
+
+      setOpen(false); 
+      setSent(false);
+      setName(''); 
+      setPhone(''); 
+      setPickup(''); 
+      setDropoff('');
+      setDate(''); 
+      setTime('07:00'); 
+      setPax('1');
+      setSelectedPkgId('');
+      alert('Đặt vé thành công! Nhân viên nhà xe sẽ liên hệ xác nhận sớm nhất.');
+    }, 1500);
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -185,6 +251,7 @@ export default function Routes() {
                       className="bk-select"
                       value={routeLabel}
                       onChange={(e) => setRouteLabel(e.target.value)}
+                      required
                     >
                       <option value="">— Chọn tuyến —</option>
                       {ROUTES_DATA.map((r) => (
@@ -194,6 +261,52 @@ export default function Routes() {
                       ))}
                     </select>
                   </div>
+
+                  {/* SELECT VEHICLE PACKAGE LIST */}
+                  {routeLabel && routePackages.length > 0 && (
+                    <div style={{ marginBottom: 18 }}>
+                      <p className="rmt-section-lbl">Chọn xe &amp; Gói cước *</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {routePackages.map((pkg) => {
+                          const isSelected = String(pkg.id) === selectedPkgId;
+                          const priceText = new Intl.NumberFormat("vi-VN").format(pkg.price) + "đ";
+                          const unitText = pkg.type === 'shared-seat' ? 'người' : 'xe';
+                          return (
+                            <div
+                              key={pkg.id}
+                              onClick={() => setSelectedPkgId(String(pkg.id))}
+                              style={{
+                                cursor: 'pointer',
+                                borderRadius: '12px',
+                                padding: '12px',
+                                border: isSelected ? '2px solid var(--accent-500)' : '1px solid rgba(232, 220, 203, 0.5)',
+                                background: isSelected ? 'var(--accent-50)' : '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                transition: 'all 0.2s ease',
+                              }}
+                            >
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+                                <span style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '13px' }}>
+                                  {pkg.vehicleName}
+                                </span>
+                                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                  {pkg.description}
+                                </span>
+                              </div>
+                              <span style={{ fontWeight: 950, color: 'var(--success-700)', fontSize: '13.5px', whiteSpace: 'nowrap' }}>
+                                {priceText}
+                                <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                                  /{unitText}
+                                </span>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <p className="rmt-section-lbl" style={{ marginTop: 16 }}>Thông tin chuyến</p>
                   <div className="rmt-row">
@@ -270,7 +383,12 @@ export default function Routes() {
                   <button
                     type="submit"
                     className="rmt-submit"
-                    disabled={!routeLabel || !name || !phone || !date}
+                    style={{
+                      background: 'linear-gradient(135deg, var(--accent-500), var(--accent-600))',
+                      color: '#fff',
+                      boxShadow: '0 4px 14px rgba(200, 137, 37, 0.2)',
+                      cursor: 'pointer',
+                    }}
                   >
                     {!routeLabel ? 'Chọn tuyến đường trước ←' : 'Xác nhận đặt vé →'}
                   </button>

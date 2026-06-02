@@ -52,7 +52,7 @@ type AdminContextType = {
   bookingHistory: BookingHistoryItem[];
   mobileSidebarOpen: boolean;
   setMobileSidebarOpen: (open: boolean) => void;
-  
+
   // Auth Functions
   login: (username: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
@@ -61,27 +61,28 @@ type AdminContextType = {
   resetFailedLoginAttempts: () => void;
   getLockoutTime: () => string | null;
   setLockout: () => void;
-  
+
   // Bookings CRUD
   addBooking: (booking: Omit<Booking, 'id' | 'code' | 'status'>) => Booking;
   updateBookingStatus: (bookingId: number, status: BookingStatus, note: string) => void;
   updateBookingInternalNote: (bookingId: number, note: string) => void;
-  
+  updateBookingTravelTime: (bookingId: number, travelTime: string) => void;
+
   // Vehicles CRUD
   addVehicle: (vehicle: Omit<Vehicle, 'id' | 'status'>) => void;
   updateVehicle: (id: number, vehicle: Omit<Vehicle, 'id'>) => void;
   toggleVehicleStatus: (id: number) => void;
-  
+
   // Routes CRUD
   addRoute: (route: Omit<RouteItem, 'id' | 'status'>) => void;
   updateRoute: (id: number, route: Omit<RouteItem, 'id'>) => void;
   toggleRouteStatus: (id: number) => void;
-  
+
   // Packages CRUD
   addPackage: (pkg: Omit<PricePackage, 'id' | 'status'>) => void;
   updatePackage: (id: number, pkg: Omit<PricePackage, 'id'>) => void;
   togglePackageStatus: (id: number) => void;
-  
+
   // Settings
   updateSiteSettings: (settings: Partial<SiteSettings>) => void;
 };
@@ -93,7 +94,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [adminUser, setAdminUser] = useState<string | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  
+
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
   const [routes, setRoutes] = useState<RouteItem[]>(initialRoutes);
@@ -112,7 +113,27 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       }
 
       const storedBookings = localStorage.getItem('bc_bookings');
-      if (storedBookings) setBookings(JSON.parse(storedBookings));
+      if (storedBookings) {
+        const parsed = JSON.parse(storedBookings);
+        let hasMigration = false;
+        const migrated = parsed.map((b: Booking) => {
+          if (!b.travelTime) {
+            hasMigration = true;
+            // Generate a time based on ID
+            const hour = 7 + (b.id % 10);
+            const minute = (b.id * 15) % 60;
+            return {
+              ...b,
+              travelTime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+            };
+          }
+          return b;
+        });
+        setBookings(migrated);
+        if (hasMigration) {
+          localStorage.setItem('bc_bookings', JSON.stringify(migrated));
+        }
+      }
 
       const storedVehicles = localStorage.getItem('bc_vehicles');
       if (storedVehicles) setVehicles(JSON.parse(storedVehicles));
@@ -218,7 +239,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const randNum = Math.floor(100 + Math.random() * 900);
     const newCode = `BC-${todayStr}-${randNum}`;
     const newId = bookings.length > 0 ? Math.max(...bookings.map((b) => b.id)) + 1 : 1;
-    
+
     const newBooking: Booking = {
       ...bookingData,
       id: newId,
@@ -251,10 +272,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const updateBookingStatus = (bookingId: number, status: BookingStatus, note: string) => {
     const targetBooking = bookings.find((b) => b.id === bookingId);
     if (!targetBooking) return;
-    
+
     const oldStatus = targetBooking.status;
-    
-    const updatedBookings = bookings.map((b) => 
+
+    const updatedBookings = bookings.map((b) =>
       b.id === bookingId ? { ...b, status } : b
     );
     setBookings(updatedBookings);
@@ -276,8 +297,16 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateBookingInternalNote = (bookingId: number, note: string) => {
-    const updatedBookings = bookings.map((b) => 
+    const updatedBookings = bookings.map((b) =>
       b.id === bookingId ? { ...b, internalNote: note } : b
+    );
+    setBookings(updatedBookings);
+    saveToLocal('bc_bookings', updatedBookings);
+  };
+
+  const updateBookingTravelTime = (bookingId: number, travelTime: string) => {
+    const updatedBookings = bookings.map((b) =>
+      b.id === bookingId ? { ...b, travelTime } : b
     );
     setBookings(updatedBookings);
     saveToLocal('bc_bookings', updatedBookings);
@@ -297,7 +326,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateVehicle = (id: number, vehicleData: Omit<Vehicle, 'id'>) => {
-    const updatedVehicles = vehicles.map((v) => 
+    const updatedVehicles = vehicles.map((v) =>
       v.id === id ? { ...v, ...vehicleData } : v
     );
     setVehicles(updatedVehicles);
@@ -305,7 +334,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleVehicleStatus = (id: number) => {
-    const updatedVehicles = vehicles.map((v) => 
+    const updatedVehicles = vehicles.map((v) =>
       v.id === id ? ({ ...v, status: v.status === 'active' ? 'hidden' : 'active' } as Vehicle) : v
     );
     setVehicles(updatedVehicles);
@@ -326,7 +355,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateRoute = (id: number, routeData: Omit<RouteItem, 'id'>) => {
-    const updatedRoutes = routes.map((r) => 
+    const updatedRoutes = routes.map((r) =>
       r.id === id ? { ...r, ...routeData } : r
     );
     setRoutes(updatedRoutes);
@@ -334,7 +363,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleRouteStatus = (id: number) => {
-    const updatedRoutes = routes.map((r) => 
+    const updatedRoutes = routes.map((r) =>
       r.id === id ? ({ ...r, status: r.status === 'active' ? 'hidden' : 'active' } as RouteItem) : r
     );
     setRoutes(updatedRoutes);
@@ -355,7 +384,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updatePackage = (id: number, packageData: Omit<PricePackage, 'id'>) => {
-    const updatedPackages = packages.map((p) => 
+    const updatedPackages = packages.map((p) =>
       p.id === id ? { ...p, ...packageData } : p
     );
     setPackages(updatedPackages);
@@ -363,7 +392,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const togglePackageStatus = (id: number) => {
-    const updatedPackages = packages.map((p) => 
+    const updatedPackages = packages.map((p) =>
       p.id === id ? ({ ...p, status: p.status === 'active' ? 'hidden' : 'active' } as PricePackage) : p
     );
     setPackages(updatedPackages);
@@ -391,7 +420,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         bookingHistory,
         mobileSidebarOpen,
         setMobileSidebarOpen,
-        
+
         login,
         logout,
         getFailedLoginAttempts,
@@ -399,23 +428,24 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         resetFailedLoginAttempts,
         getLockoutTime,
         setLockout,
-        
+
         addBooking,
         updateBookingStatus,
         updateBookingInternalNote,
-        
+        updateBookingTravelTime,
+
         addVehicle,
         updateVehicle,
         toggleVehicleStatus,
-        
+
         addRoute,
         updateRoute,
         toggleRouteStatus,
-        
+
         addPackage,
         updatePackage,
         togglePackageStatus,
-        
+
         updateSiteSettings,
       }}
     >

@@ -81,8 +81,8 @@ export default function Header({ heroOverlay = false }: HeaderProps) {
             ))}
             {/* Nút Đặt xe nổi bật trong nav */}
             <a
-              href="/#booking"
-              onClick={(e) => handleNavigate(e, "/#booking")}
+              href="/#booking-section"
+              onClick={(e) => handleNavigate(e, "/#booking-section")}
               className="bc-nav__book-btn"
               aria-label="Đặt xe ngay"
             >
@@ -168,8 +168,8 @@ export default function Header({ heroOverlay = false }: HeaderProps) {
             </a>
           ))}
           <a
-            href="/#booking"
-            onClick={(e) => handleNavigate(e, "/#booking")}
+            href="/#booking-section"
+            onClick={(e) => handleNavigate(e, "/#booking-section")}
             className="bc-mobile-menu__link bc-mobile-menu__link--book"
           >
             Đặt Xe
