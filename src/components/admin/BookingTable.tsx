@@ -9,6 +9,24 @@ function formatMoney(value: number) {
   return new Intl.NumberFormat("vi-VN").format(value) + "đ";
 }
 
+function formatCreatedAt(dateStr?: string) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    
+    const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    if (isToday) {
+      return `Đặt lúc: ${timeStr} (Hôm nay)`;
+    }
+    const dateFormatted = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    return `Đặt lúc: ${timeStr} (${dateFormatted})`;
+  } catch (e) {
+    return '';
+  }
+}
+
 export default function BookingTable() {
   const { 
     bookings, 
@@ -17,6 +35,7 @@ export default function BookingTable() {
     addBooking,
     updateBookingStatus, 
     updateBookingInternalNote,
+    updateBookingTravelTime,
     bookingHistory 
   } = useAdmin();
 
@@ -31,6 +50,7 @@ export default function BookingTable() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [statusChangeNote, setStatusChangeNote] = useState('');
   const [internalNoteInput, setInternalNoteInput] = useState('');
+  const [modalTravelTime, setModalTravelTime] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<BookingStatus | null>(null);
 
   // Manual booking modal state
@@ -39,6 +59,7 @@ export default function BookingTable() {
   const [addPhone, setAddPhone] = useState('');
   const [addPkgId, setAddPkgId] = useState('');
   const [addTravelDate, setAddTravelDate] = useState('');
+  const [addTravelTime, setAddTravelTime] = useState('');
   const [addPickup, setAddPickup] = useState('');
   const [addDropoff, setAddDropoff] = useState('');
   const [addPassengerCount, setAddPassengerCount] = useState(1);
@@ -88,6 +109,7 @@ export default function BookingTable() {
   const handleOpenDetail = (booking: Booking) => {
     setSelectedBooking(booking);
     setInternalNoteInput(booking.internalNote || '');
+    setModalTravelTime(booking.travelTime || '');
     setStatusChangeNote('');
     setIsUpdatingStatus(null);
   };
@@ -121,9 +143,9 @@ export default function BookingTable() {
     ? bookingHistory.filter(h => h.bookingId === selectedBooking.id)
     : [];
   return (
-    <div className="overflow-hidden rounded-3xl border border-[#e8dccb] bg-[#fffdf8] shadow-sm font-sans">
+    <div className="overflow-hidden rounded-3xl bg-[#fffdf8] shadow-[0_8px_30px_rgb(0,0,0,0.02)] font-sans border-none">
       {/* Header and buttons */}
-      <div className="flex flex-col gap-4 border-b border-[#e8dccb] p-5 sm:flex-row sm:items-center sm:justify-between bg-[#fffdf8]">
+      <div className="flex flex-col gap-4 border-b border-[#e8dccb]/30 p-5 sm:flex-row sm:items-center sm:justify-between bg-[#fffdf8]">
         <div>
           <h2 className="text-lg font-black text-[#102033]">Danh sách đơn đặt vé</h2>
           <p className="text-sm text-[#5f6b76]">Quản lý trạng thái, liên hệ hành khách và phân bổ xe.</p>
@@ -141,13 +163,13 @@ export default function BookingTable() {
       </div>
 
       {/* Filters bar */}
-      <div className="flex flex-wrap gap-3 bg-[#fbfaf7] border-b border-[#e8dccb]/50 p-5">
+      <div className="flex flex-wrap gap-3 bg-[#fbfaf7] border-b border-[#e8dccb]/20 p-5">
         {/* Search */}
         <div className="relative min-w-[200px] flex-1">
           <input 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]" 
+            className="w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]" 
             placeholder="Tìm tên, SĐT hoặc mã đơn..." 
           />
         </div>
@@ -156,7 +178,7 @@ export default function BookingTable() {
         <select 
           value={routeFilter}
           onChange={(e) => setRouteFilter(e.target.value)}
-          className="rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
+          className="rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
         >
           <option value="all">Tất cả tuyến đường</option>
           {routes.map(r => (
@@ -168,7 +190,7 @@ export default function BookingTable() {
         <select 
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
+          className="rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
         >
           <option value="all">Tất cả ngày đi</option>
           <option value="today">Đi hôm nay</option>
@@ -182,7 +204,7 @@ export default function BookingTable() {
             type="date"
             value={customDate}
             onChange={(e) => setCustomDate(e.target.value)}
-            className="rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
+            className="rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
           />
         )}
 
@@ -190,7 +212,7 @@ export default function BookingTable() {
         <select 
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
+          className="rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
         >
           <option value="all">Tất cả trạng thái</option>
           <option value="new">Mới gửi</option>
@@ -215,7 +237,7 @@ export default function BookingTable() {
               <th className="px-5 py-4">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#e8dccb]/60">
+          <tbody className="divide-y divide-[#e8dccb]/30">
             {sortedBookings.length > 0 ? (
               sortedBookings.map((booking) => {
                 const isNew = booking.status === 'new';
@@ -235,6 +257,11 @@ export default function BookingTable() {
                         )}
                         <span>{booking.code}</span>
                       </div>
+                      {booking.createdAt && (
+                        <p className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded mt-1.5 inline-block">
+                          {formatCreatedAt(booking.createdAt)}
+                        </p>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       <p className="font-bold text-[#102033]">{booking.customerName}</p>
@@ -243,7 +270,14 @@ export default function BookingTable() {
                     <td className="px-5 py-4 text-[#102033] font-semibold">{booking.routeName}</td>
                     <td className="px-5 py-4 text-[#5f6b76] font-medium">
                       <div className="flex flex-col">
-                        <span>{booking.travelDate}</span>
+                        <div className="flex items-center gap-1.5">
+                          {booking.travelTime && (
+                            <span className="rounded bg-indigo-50 text-indigo-700 px-1.5 py-0.5 text-[11px] font-black shrink-0">
+                              {booking.travelTime}
+                            </span>
+                          )}
+                          <span>{booking.travelDate}</span>
+                        </div>
                         {booking.travelDate === todayStr && (
                           <span className="text-[10px] text-amber-600 font-black uppercase tracking-wider mt-0.5">Hôm nay</span>
                         )}
@@ -258,7 +292,7 @@ export default function BookingTable() {
                     <td className="px-5 py-4">
                       <button 
                         onClick={() => handleOpenDetail(booking)}
-                        className="rounded-2xl bg-[#ffefc2] border border-[#ffe08a] px-4 py-2 text-xs font-bold text-[#805112] hover:bg-[#ffe08a] transition"
+                        className="rounded-2xl bg-[#ffefc2] hover:bg-[#ffe08a] px-4 py-2 text-xs font-bold text-[#805112] transition border-none"
                       >
                         Chi tiết
                       </button>
@@ -279,17 +313,24 @@ export default function BookingTable() {
 
       {/* Booking Detail Modal */}
       {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#04101b]/60 p-4 font-sans backdrop-blur-sm">
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#fffdf8] border border-[#e8dccb] shadow-2xl animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#04101b]/50 p-4 font-sans backdrop-blur-sm">
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#fffdf8] shadow-2xl animate-fade-in border-none">
             {/* Modal Header */}
-            <div className="sticky top-0 flex items-center justify-between border-b border-[#e8dccb] bg-[#fffdf8] px-6 py-5 z-10">
+            <div className="sticky top-0 flex items-center justify-between border-b border-[#e8dccb]/30 bg-[#fffdf8] px-6 py-5 z-10">
               <div>
-                <span className="text-xs font-bold text-[#9c9287] uppercase tracking-wider">Chi tiết đơn vé</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#9c9287] uppercase tracking-wider">Chi tiết đơn vé</span>
+                  {selectedBooking.createdAt && (
+                    <span className="text-[10px] text-amber-700 font-extrabold bg-amber-50 px-2 py-0.5 rounded-md">
+                      {formatCreatedAt(selectedBooking.createdAt)}
+                    </span>
+                  )}
+                </div>
                 <h3 className="text-xl font-black text-[#102033]">{selectedBooking.code}</h3>
               </div>
               <button 
                 onClick={() => setSelectedBooking(null)}
-                className="rounded-2xl border border-[#e8dccb] p-2.5 hover:bg-[#f6efe1] text-[#5f6b76] focus:outline-none transition"
+                className="rounded-2xl bg-[#fbfaf7] hover:bg-[#f6efe1] p-2.5 text-[#5f6b76] focus:outline-none transition border-none"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -302,7 +343,7 @@ export default function BookingTable() {
             <div className="p-6 space-y-6">
               {/* Main Info Blocks */}
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl bg-[#fbfaf7] p-4 border border-[#e8dccb]">
+                <div className="rounded-2xl bg-[#fbfaf7] p-4 shadow-[0_2px_8px_rgba(16,32,51,0.02)] border-none">
                   <h4 className="text-xs font-bold uppercase text-[#9c9287] tracking-wider mb-3">Thông tin khách hàng</h4>
                   <div className="space-y-2 text-sm text-[#102033]">
                     <p><strong>Họ và tên:</strong> {selectedBooking.customerName}</p>
@@ -311,16 +352,43 @@ export default function BookingTable() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-[#fbfaf7] p-4 border border-[#e8dccb]">
+                <div className="rounded-2xl bg-[#fbfaf7] p-4 shadow-[0_2px_8px_rgba(16,32,51,0.02)] border-none">
                   <h4 className="text-xs font-bold uppercase text-[#9c9287] tracking-wider mb-3">Thông tin hành trình</h4>
                   <div className="space-y-2 text-sm text-[#102033]">
                     <p><strong>Tuyến đường:</strong> {selectedBooking.routeName}</p>
-                    <p><strong>Ngày khởi hành:</strong> {selectedBooking.travelDate}</p>
+                    <p><strong>Ngày khởi hành:</strong> {selectedBooking.travelDate} {selectedBooking.travelTime && <span className="font-black text-indigo-750 bg-indigo-50 px-1.5 py-0.5 rounded text-xs">{selectedBooking.travelTime}</span>}</p>
                     <p><strong>Số lượng:</strong> {selectedBooking.passengerCount} người</p>
+                    
+                    {/* Edit Departure Time */}
+                    <div className="pt-2.5 border-t border-[#e8dccb]/30 mt-2.5">
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cập nhật Giờ đi</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="time" 
+                          value={modalTravelTime}
+                          onChange={(e) => setModalTravelTime(e.target.value)}
+                          className="rounded-xl border border-[#e8dccb]/60 bg-white text-[#102033] px-3 py-1.5 text-xs outline-none focus:border-[#c88925] font-sans"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBookingTravelTime(selectedBooking.id, modalTravelTime);
+                            setSelectedBooking({
+                              ...selectedBooking,
+                              travelTime: modalTravelTime
+                            });
+                            alert('Đã cập nhật giờ đi thành công!');
+                          }}
+                          className="rounded-xl bg-[#123047] hover:bg-[#04101b] px-3 py-1.5 text-xs font-bold text-white transition border-none"
+                        >
+                          Lưu
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-[#fbfaf7] p-4 border border-[#e8dccb] md:col-span-2">
+                <div className="rounded-2xl bg-[#fbfaf7] p-4 shadow-[0_2px_8px_rgba(16,32,51,0.02)] md:col-span-2 border-none">
                   <h4 className="text-xs font-bold uppercase text-[#9c9287] tracking-wider mb-3">Địa điểm đưa đón</h4>
                   <div className="space-y-2 text-sm text-[#102033]">
                     <p className="flex items-center gap-1.5">
@@ -342,7 +410,7 @@ export default function BookingTable() {
               </div>
 
               {/* Amount & Status Banner */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-[#04101b] p-5 text-white shadow-lg">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-[#04101b] p-5 text-white shadow-lg border-none">
                 <div>
                   <p className="text-xs text-slate-400">Tổng số tiền cước</p>
                   <p className="text-2xl font-black text-[#f8c95c] mt-1">{formatMoney(selectedBooking.totalPrice)}</p>
@@ -354,7 +422,7 @@ export default function BookingTable() {
               </div>
 
               {/* Status Update Section */}
-              <div className="rounded-2xl border border-[#e8dccb] bg-[#fbfaf7] p-5">
+              <div className="rounded-2xl bg-[#fbfaf7] p-5 shadow-[0_2px_12px_rgba(16,32,51,0.02)] border-none">
                 <h4 className="text-sm font-black text-[#102033] mb-3">Cập nhật tiến trình đơn hàng</h4>
                 
                 {isUpdatingStatus ? (
@@ -369,18 +437,18 @@ export default function BookingTable() {
                       value={statusChangeNote}
                       onChange={(e) => setStatusChangeNote(e.target.value)}
                       placeholder="Nhập lý do đổi trạng thái hoặc ghi chú đi kèm... (Không bắt buộc)"
-                      className="w-full rounded-2xl border border-[#e8dccb] p-3 text-sm outline-none focus:border-[#c88925] bg-white text-[#102033]"
+                      className="w-full rounded-2xl p-3 text-sm outline-none bg-white text-[#102033] shadow-[0_2px_8px_rgba(0,0,0,0.02)] border-none"
                     />
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleUpdateStatus(isUpdatingStatus)}
-                        className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#a86e19] transition"
+                        className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#a86e19] transition border-none"
                       >
                         Chấp nhận đổi
                       </button>
                       <button
                         onClick={() => setIsUpdatingStatus(null)}
-                        className="rounded-2xl bg-[#f4f0e8] px-5 py-2.5 text-xs font-bold text-[#5f6b76] hover:bg-[#e7dfd2] transition"
+                        className="rounded-2xl bg-[#f4f0e8] px-5 py-2.5 text-xs font-bold text-[#5f6b76] hover:bg-[#e7dfd2] transition border-none"
                       >
                         Hủy bỏ
                       </button>
@@ -391,9 +459,9 @@ export default function BookingTable() {
                     {selectedBooking.status !== 'confirmed' && selectedBooking.status !== 'completed' && selectedBooking.status !== 'cancelled' && (
                       <button
                         onClick={() => setIsUpdatingStatus('confirmed')}
-                        className="rounded-2xl bg-emerald-100 px-4 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition flex items-center gap-1"
+                        className="rounded-2xl bg-emerald-100 px-4 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-250 transition flex items-center gap-1 border-none"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.7 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                         </svg>
                         Gọi &amp; Xác nhận đơn
@@ -402,7 +470,7 @@ export default function BookingTable() {
                     {selectedBooking.status === 'confirmed' && (
                       <button
                         onClick={() => setIsUpdatingStatus('completed')}
-                        className="rounded-2xl bg-sky-100 px-4 py-2.5 text-xs font-bold text-sky-800 hover:bg-sky-200 border border-sky-300 transition flex items-center gap-1"
+                        className="rounded-2xl bg-sky-100 px-4 py-2.5 text-xs font-bold text-sky-800 hover:bg-sky-200 transition flex items-center gap-1 border-none"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12" />
@@ -413,7 +481,7 @@ export default function BookingTable() {
                     {selectedBooking.status !== 'cancelled' && selectedBooking.status !== 'completed' && (
                       <button
                         onClick={() => setIsUpdatingStatus('cancelled')}
-                        className="rounded-2xl bg-rose-100 px-4 py-2.5 text-xs font-bold text-rose-800 hover:bg-rose-200 border border-rose-300 transition flex items-center gap-1"
+                        className="rounded-2xl bg-rose-100 px-4 py-2.5 text-xs font-bold text-rose-800 hover:bg-rose-200 transition flex items-center gap-1 border-none"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18" />
@@ -428,7 +496,7 @@ export default function BookingTable() {
                           setIsUpdatingStatus('confirmed');
                           setStatusChangeNote('Khôi phục lại đơn đã hủy.');
                         }}
-                        className="rounded-2xl bg-[#ffefc2] px-4 py-2.5 text-xs font-bold text-[#805112] hover:bg-[#ffe08a] border border-[#ffe08a] transition flex items-center gap-1"
+                        className="rounded-2xl bg-[#ffefc2] px-4 py-2.5 text-xs font-bold text-[#805112] hover:bg-[#ffe08a] transition flex items-center gap-1 border-none"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
@@ -445,25 +513,25 @@ export default function BookingTable() {
 
               {/* Internal Notes & Customer Notes */}
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-[#e8dccb] p-4">
+                <div className="rounded-2xl p-4 bg-[#fbfaf7] shadow-[0_2px_8px_rgba(16,32,51,0.02)] border-none">
                   <h4 className="text-sm font-black text-[#102033] mb-2">Ghi chú của khách hàng</h4>
-                  <div className="text-sm text-[#5f6b76] bg-[#fbfaf7] p-3 rounded-xl min-h-[80px] border border-[#e8dccb]/50">
+                  <div className="text-sm text-[#5f6b76] bg-white p-3 rounded-xl min-h-[80px] shadow-[0_2px_8px_rgba(0,0,0,0.02)] border-none">
                     {selectedBooking.customerNote || 'Không có ghi chú nào từ khách hàng.'}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-[#e8dccb] p-4">
+                <div className="rounded-2xl p-4 bg-[#fbfaf7] shadow-[0_2px_8px_rgba(16,32,51,0.02)] border-none">
                   <h4 className="text-sm font-black text-[#102033] mb-2">Ghi chú nội bộ (Nhân viên)</h4>
                   <textarea
                     rows={3}
                     value={internalNoteInput}
                     onChange={(e) => setInternalNoteInput(e.target.value)}
                     placeholder="Chỉ nhân viên xem được: ví dụ đón ngã tư, khách có đồ cồng kềnh..."
-                    className="w-full rounded-xl border border-[#e8dccb] p-3 text-sm outline-none focus:border-[#c88925] bg-[#fbfaf7] text-[#102033] mb-2"
+                    className="w-full rounded-xl p-3 text-sm outline-none bg-white text-[#102033] shadow-[0_2px_8px_rgba(0,0,0,0.02)] mb-2 border-none"
                   />
                   <button
                     onClick={handleSaveInternalNote}
-                    className="rounded-2xl bg-[#123047] px-5 py-2 text-xs font-bold text-white hover:bg-[#04101b] transition"
+                    className="rounded-2xl bg-[#123047] px-5 py-2 text-xs font-bold text-white hover:bg-[#04101b] transition border-none"
                   >
                     Lưu ghi chú
                   </button>
@@ -471,7 +539,7 @@ export default function BookingTable() {
               </div>
 
               {/* History Logs */}
-              <div className="rounded-2xl border border-[#e8dccb] p-5">
+              <div className="rounded-2xl p-5 bg-[#fbfaf7] shadow-[0_2px_8px_rgba(16,32,51,0.02)] border-none">
                 <h4 className="text-sm font-black text-[#102033] mb-3">Lịch sử xử lý đơn</h4>
                 <div className="space-y-3.5 max-h-[180px] overflow-y-auto pr-2">
                   {activeHistory.length > 0 ? (
@@ -484,7 +552,7 @@ export default function BookingTable() {
                         <p className="mt-1 font-semibold text-[#102033]">
                           Trạng thái: <span className="text-slate-500">{log.oldStatus === 'created' ? 'Mới' : log.oldStatus}</span> &rarr; <span className="text-[#102033] font-bold">{log.newStatus}</span>
                         </p>
-                        {log.note && <p className="mt-1 text-[#5f6b76] italic bg-[#fbfaf7] p-1.5 rounded-lg border border-[#e8dccb]/30">&ldquo;{log.note}&rdquo;</p>}
+                        {log.note && <p className="mt-1 text-[#5f6b76] italic bg-white p-1.5 rounded-lg shadow-[0_2px_6px_rgba(0,0,0,0.01)] border-none">&ldquo;{log.note}&rdquo;</p>}
                       </div>
                     ))
                   ) : (
@@ -495,10 +563,10 @@ export default function BookingTable() {
             </div>
 
             {/* Modal Footer */}
-            <div className="sticky bottom-0 border-t border-[#e8dccb] bg-[#fffdf8] px-6 py-4 flex justify-end z-10">
+            <div className="sticky bottom-0 border-t border-[#e8dccb]/30 bg-[#fffdf8] px-6 py-4 flex justify-end z-10">
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="rounded-2xl bg-[#04101b] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#123047] transition"
+                className="rounded-2xl bg-[#04101b] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#123047] transition border-none"
               >
                 Đóng chi tiết
               </button>
@@ -509,17 +577,17 @@ export default function BookingTable() {
 
       {/* Manual Booking Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#04101b]/60 p-4 font-sans backdrop-blur-sm">
-          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-[#fffdf8] border border-[#e8dccb] shadow-2xl animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#04101b]/50 p-4 font-sans backdrop-blur-sm">
+          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-[#fffdf8] shadow-2xl animate-fade-in border-none">
             {/* Modal Header */}
-            <div className="sticky top-0 flex items-center justify-between border-b border-[#e8dccb] bg-[#fffdf8] px-6 py-5 z-10">
+            <div className="sticky top-0 flex items-center justify-between border-b border-[#e8dccb]/30 bg-[#fffdf8] px-6 py-5 z-10">
               <div>
                 <span className="text-xs font-bold text-[#9c9287] uppercase tracking-wider">Thao tác quản trị</span>
                 <h3 className="text-xl font-black text-[#102033]">Đặt vé thủ công</h3>
               </div>
               <button 
                 onClick={() => setIsAddOpen(false)}
-                className="rounded-2xl border border-[#e8dccb] p-2.5 hover:bg-[#f6efe1] text-[#5f6b76] focus:outline-none transition"
+                className="rounded-2xl bg-[#fbfaf7] hover:bg-[#f6efe1] p-2.5 text-[#5f6b76] focus:outline-none transition border-none"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -549,6 +617,7 @@ export default function BookingTable() {
                   phone: addPhone,
                   routeName: selectedPkg.routeName,
                   travelDate: addTravelDate,
+                  travelTime: addTravelTime || undefined,
                   pickupAddress: addPickup,
                   dropoffAddress: addDropoff,
                   passengerCount: addPassengerCount,
@@ -565,6 +634,7 @@ export default function BookingTable() {
                 setAddPhone('');
                 setAddPkgId('');
                 setAddTravelDate('');
+                setAddTravelTime('');
                 setAddPickup('');
                 setAddDropoff('');
                 setAddPassengerCount(1);
@@ -582,7 +652,7 @@ export default function BookingTable() {
                   value={addCustomerName}
                   onChange={(e) => setAddCustomerName(e.target.value)}
                   placeholder="Nhập họ và tên..."
-                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
+                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
                 />
               </div>
 
@@ -594,7 +664,7 @@ export default function BookingTable() {
                   value={addPhone}
                   onChange={(e) => setAddPhone(e.target.value)}
                   placeholder="Nhập số điện thoại..."
-                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
+                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
                 />
               </div>
 
@@ -604,7 +674,7 @@ export default function BookingTable() {
                   required
                   value={addPkgId}
                   onChange={(e) => setAddPkgId(e.target.value)}
-                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
+                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
                 >
                   <option value="">-- Chọn tuyến &amp; loại xe --</option>
                   {packages.filter(p => p.status === 'active').map(p => (
@@ -615,7 +685,7 @@ export default function BookingTable() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#5f6b76] uppercase">Ngày đi *</label>
                   <input 
@@ -623,7 +693,18 @@ export default function BookingTable() {
                     type="date"
                     value={addTravelDate}
                     onChange={(e) => setAddTravelDate(e.target.value)}
-                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
+                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#5f6b76] uppercase">Giờ đi *</label>
+                  <input 
+                    required
+                    type="time"
+                    value={addTravelTime}
+                    onChange={(e) => setAddTravelTime(e.target.value)}
+                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
                   />
                 </div>
 
@@ -636,7 +717,7 @@ export default function BookingTable() {
                     max={50}
                     value={addPassengerCount}
                     onChange={(e) => setAddPassengerCount(Number(e.target.value))}
-                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
+                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
                   />
                 </div>
               </div>
@@ -648,7 +729,7 @@ export default function BookingTable() {
                   value={addPickup}
                   onChange={(e) => setAddPickup(e.target.value)}
                   placeholder="Ví dụ: 12 Hùng Vương, Huế..."
-                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
+                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
                 />
               </div>
 
@@ -659,7 +740,7 @@ export default function BookingTable() {
                   value={addDropoff}
                   onChange={(e) => setAddDropoff(e.target.value)}
                   placeholder="Ví dụ: Cầu Rồng, Đà Nẵng..."
-                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
+                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
                 />
               </div>
 
@@ -671,7 +752,7 @@ export default function BookingTable() {
                     value={addEmail}
                     onChange={(e) => setAddEmail(e.target.value)}
                     placeholder="khachhang@gmail.com"
-                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2 text-sm outline-none focus:border-[#c88925]"
+                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2 text-sm outline-none focus:border-[#c88925]"
                   />
                 </div>
 
@@ -688,7 +769,7 @@ export default function BookingTable() {
                     }
                     value={addCustomPrice === null ? '' : addCustomPrice}
                     onChange={(e) => setAddCustomPrice(e.target.value === '' ? null : Number(e.target.value))}
-                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] px-4 py-2 text-sm outline-none focus:border-[#c88925]"
+                    className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2 text-sm outline-none focus:border-[#c88925]"
                   />
                 </div>
               </div>
@@ -700,22 +781,22 @@ export default function BookingTable() {
                   value={addNote}
                   onChange={(e) => setAddNote(e.target.value)}
                   placeholder="Khách mang theo hành lý cồng kềnh..."
-                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb] bg-[#fffdf8] text-[#102033] p-3 text-sm outline-none focus:border-[#c88925]"
+                  className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] p-3 text-sm outline-none focus:border-[#c88925]"
                 />
               </div>
 
               {/* Modal Actions */}
-              <div className="flex justify-end gap-2 border-t border-[#e8dccb]/50 pt-4">
+              <div className="flex justify-end gap-2 border-t border-[#e8dccb]/20 pt-4">
                 <button 
                   type="button" 
                   onClick={() => setIsAddOpen(false)}
-                  className="rounded-2xl bg-[#f4f0e8] px-5 py-2.5 text-sm font-bold text-[#5f6b76] hover:bg-[#e7dfd2] transition focus:outline-none"
+                  className="rounded-2xl bg-[#f4f0e8] px-5 py-2.5 text-sm font-bold text-[#5f6b76] hover:bg-[#e7dfd2] transition border-none focus:outline-none"
                 >
                   Hủy bỏ
                 </button>
                 <button 
                   type="submit"
-                  className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition focus:outline-none"
+                  className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition border-none focus:outline-none"
                 >
                   Tạo đơn đặt vé
                 </button>

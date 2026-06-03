@@ -174,6 +174,8 @@ export default function PriceList() {
 
     return {
       id: `pkg-${pkg.id}`,
+      rawId: pkg.id,
+      routeName: pkg.routeName,
       type: isShared ? 'shared' : 'charter',
       category,
       route: pkg.routeName.replace('→', '⇄'),
@@ -205,6 +207,44 @@ export default function PriceList() {
       window.removeEventListener('select-price-tab', handleSelectTab);
     };
   }, []);
+
+  const handleBookNow = (item: any) => {
+    let pkgId = '';
+    let tripType = item.type === 'shared' ? 'shared-seat' : 'private-trip';
+    let routeName = '';
+
+    if (item.rawId) {
+      pkgId = String(item.rawId);
+      routeName = item.routeName;
+    } else {
+      const routeText = item.route.replace('⇄', '→');
+      const match = activePackages.find(
+        (p) => p.type === tripType && p.routeName.replace('→', '⇄') === item.route
+      );
+      if (match) {
+        pkgId = String(match.id);
+        routeName = match.routeName;
+      } else {
+        routeName = routeText;
+      }
+    }
+
+    // 1. Dispatch custom event to select package in booking form
+    window.dispatchEvent(
+      new CustomEvent('select-booking-pkg', {
+        detail: {
+          pkgId,
+          tripType,
+          routeName,
+        },
+      })
+    );
+
+    // 2. Scroll to booking form
+    document
+      .getElementById('booking-section')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const filteredPrices = displayPrices.filter(
     (p) => p.type === tab && (carFilter === 'all' || p.category === carFilter)
@@ -290,11 +330,7 @@ export default function PriceList() {
                   <td>
                     <button
                       className="price-book-btn"
-                      onClick={() =>
-                        document
-                          .getElementById('booking-section')
-                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      }
+                      onClick={() => handleBookNow(item)}
                     >
                       Đặt xe ngay
                     </button>
@@ -340,11 +376,7 @@ export default function PriceList() {
               </div>
               <button
                 className="price-mob-btn"
-                onClick={() =>
-                  document
-                    .getElementById('booking-section')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }
+                onClick={() => handleBookNow(item)}
               >
                 Đặt xe ngay
               </button>

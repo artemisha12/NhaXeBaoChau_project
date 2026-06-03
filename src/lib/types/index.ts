@@ -3,12 +3,13 @@ export type PackageType = "shared-seat" | "private-trip";
 
 export type Vehicle = {
   id: number;
-  name: string;
-  type: string;
-  seats: number;
-  plateNumber: string;
-  description: string;
-  status: "active" | "hidden";
+  name: string;           // vehicle_name
+  type: string;           // vehicle_type
+  seats: number;          // seat_count
+  plateNumber: string;    // license_plate
+  imageUrl: string;       // image_url
+  description: string;    // description
+  status: "active" | "hidden"; // is_active
 };
 
 export type RouteItem = {
@@ -49,4 +50,5 @@ export type Booking = {
   priceAtBooking?: number;
   internalNote?: string;
   createdAt?: string;
+  travelTime?: string;
 };
