@@ -2,8 +2,24 @@
 
 import { useAdmin } from "@/context/AdminContext";
 
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("vi-VN").format(value) + "đ";
+}
+
+function renderGrowth(pct: number, label: string) {
+  const isPositive = pct >= 0;
+  const colorClass = isPositive ? 'text-emerald-600' : 'text-rose-600';
+  const arrow = isPositive ? '↑' : '↓';
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[10px] font-black ${colorClass} bg-black/[0.02] px-1.5 py-0.5 rounded-md mt-1.5`}>
+      <span>{arrow} {Math.abs(pct).toFixed(0)}%</span>
+      <span className="text-[#9c9287] font-semibold ml-0.5">{label}</span>
+    </span>
+  );
+}
+
 export default function DashboardCards() {
-  const { bookings, vehicles } = useAdmin();
+  const { bookings } = useAdmin();
   const now = new Date();
 
   // Helper to get local date in YYYY-MM-DD
@@ -15,49 +31,89 @@ export default function DashboardCards() {
   };
 
   const todayStr = getLocalDateString(now);
-
-  // 1. Số xe đang hoạt động (vehicles with status 'active')
-  const activeVehicles = vehicles.filter((v) => v.status === 'active').length;
-
-  // 2. Đơn mới hôm nay (bookings created today)
-  const newBookingsToday = bookings.filter((b) => 
-    b.createdAt && b.createdAt.startsWith(todayStr)
-  ).length;
-
-  // 3. Đơn chờ xác nhận (total bookings with status 'new' across all days)
-  const pendingConfirm = bookings.filter((b) => b.status === 'new').length;
-
-  // 4. Chuyến đi hôm nay (bookings with travelDate today and status !== 'cancelled')
-  const tripsToday = bookings.filter((b) => 
-    b.travelDate === todayStr && b.status !== 'cancelled'
-  ).length;
-
-  // 5. Tổng đơn trong tháng (bookings with travelDate in the current month)
   const currentMonthStr = todayStr.slice(0, 7); // e.g. "2026-06"
-  const totalMonth = bookings.filter((b) => 
+
+  // Yesterday date calculation
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  // Last Month string calculation
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthYear = lastMonthDate.getFullYear();
+  const lastMonthMonth = String(lastMonthDate.getMonth() + 1).padStart(2, '0');
+  const lastMonthStr = `${lastMonthYear}-${lastMonthMonth}`; // e.g. "2026-05"
+
+  // 1. Số đơn hôm nay (bookings created today)
+  const todayBookings = bookings.filter((b) => {
+    if (!b.createdAt) return false;
+    try {
+      const createdDate = new Date(b.createdAt);
+      return (
+        createdDate.getFullYear() === now.getFullYear() &&
+        createdDate.getMonth() === now.getMonth() &&
+        createdDate.getDate() === now.getDate()
+      );
+    } catch {
+      return false;
+    }
+  });
+  const todayBookingsCount = todayBookings.length;
+  
+  // Yesterday's bookings count (created yesterday)
+  const yesterdayBookingsCount = bookings.filter((b) => {
+    if (!b.createdAt) return false;
+    try {
+      const createdDate = new Date(b.createdAt);
+      return (
+        createdDate.getFullYear() === yesterday.getFullYear() &&
+        createdDate.getMonth() === yesterday.getMonth() &&
+        createdDate.getDate() === yesterday.getDate()
+      );
+    } catch {
+      return false;
+    }
+  }).length;
+
+  const dayGrowth = yesterdayBookingsCount > 0 ? ((todayBookingsCount - yesterdayBookingsCount) / yesterdayBookingsCount) * 100 : todayBookingsCount * 100;
+
+  // 2. Đơn cần xử lý (status = 'new')
+  const pendingCount = bookings.filter((b) => b.status === 'new').length;
+
+  // 3. Tổng đơn trong tháng
+  const monthlyCount = bookings.filter((b) => 
     b.travelDate && b.travelDate.startsWith(currentMonthStr)
   ).length;
 
+  // Last Month's bookings count
+  const lastMonthCount = bookings.filter((b) => 
+    b.travelDate && b.travelDate.startsWith(lastMonthStr)
+  ).length;
+
+  const monthGrowth = lastMonthCount > 0 ? ((monthlyCount - lastMonthCount) / lastMonthCount) * 100 : monthlyCount * 100;
+
+  // 4. Doanh thu tháng (confirmed + completed in this month)
+  const monthlyRevenue = bookings
+    .filter((b) => 
+      b.travelDate?.startsWith(currentMonthStr) &&
+      (b.status === 'confirmed' || b.status === 'completed')
+    )
+    .reduce((sum, b) => sum + b.totalPrice, 0);
+
+  // Last Month's revenue
+  const lastMonthRevenue = bookings
+    .filter((b) => 
+      b.travelDate?.startsWith(lastMonthStr) &&
+      (b.status === 'confirmed' || b.status === 'completed')
+    )
+    .reduce((sum, b) => sum + b.totalPrice, 0);
+
+  const revenueGrowth = lastMonthRevenue > 0 ? ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : monthlyRevenue * 100;
+
   const cards = [
     { 
-      label: "Số xe có sẵn", 
-      value: String(activeVehicles).padStart(2, '0'), 
-      note: "Đội xe sẵn sàng phục vụ", 
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c88925" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-          <circle cx="7" cy="17" r="2" />
-          <path d="M9 17h6" />
-          <circle cx="17" cy="17" r="2" />
-        </svg>
-      ),
-      bgClass: "bg-[#fffdf8] border-none",
-      iconBg: "bg-[#fff8e8] border-none"
-    },
-    { 
-      label: "Đơn mới hôm nay", 
-      value: String(newBookingsToday).padStart(2, '0'), 
-      note: "Đơn đặt trong ngày", 
+      label: "Số đơn hôm nay", 
+      value: String(todayBookingsCount).padStart(2, '0'), 
+      note: "Tổng đơn đặt xe trong ngày", 
+      growth: renderGrowth(dayGrowth, "so với hôm qua"),
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -67,12 +123,12 @@ export default function DashboardCards() {
         </svg>
       ),
       bgClass: "bg-[#fffdf8] border-none",
-      iconBg: "bg-[#fff2ed] border-none"
+      iconBg: "bg-[#fff2ed] border-none",
     },
     { 
-      label: "Đơn chờ xác nhận", 
-      value: String(pendingConfirm).padStart(2, '0'), 
-      note: "Tổng đơn chưa xử lý", 
+      label: "Đơn cần xử lý", 
+      value: String(pendingCount).padStart(2, '0'), 
+      note: "Đơn mới chưa được xác nhận", 
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
@@ -81,12 +137,14 @@ export default function DashboardCards() {
         </svg>
       ),
       bgClass: "bg-[#fffdf8] border-none",
-      iconBg: "bg-[#f0fdf4] border-none"
+      iconBg: "bg-[#f0fdf4] border-none",
+      highlight: pendingCount > 0,
     },
     { 
-      label: "Chuyến đi hôm nay", 
-      value: String(tripsToday).padStart(2, '0'), 
-      note: "Lịch chạy trong ngày", 
+      label: "Tổng đơn trong tháng", 
+      value: String(monthlyCount).padStart(2, '0'), 
+      note: `Tất cả đơn tháng ${now.getMonth() + 1}`, 
+      growth: renderGrowth(monthGrowth, "so với tháng trước"),
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
@@ -102,9 +160,11 @@ export default function DashboardCards() {
       iconBg: "bg-[#eff6ff] border-none"
     },
     { 
-      label: "Tổng đơn trong tháng", 
-      value: String(totalMonth).padStart(2, '0'), 
-      note: `Tổng số chuyến tháng ${now.getMonth() + 1}`, 
+      label: "Doanh thu tháng", 
+      value: formatMoney(monthlyRevenue), 
+      note: `Doanh thu thực nhận tháng ${now.getMonth() + 1}`, 
+      growth: renderGrowth(revenueGrowth, "so với tháng trước"),
+      isRevenue: true,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#854d0e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <line x1="12" y1="1" x2="12" y2="23" />
@@ -117,14 +177,32 @@ export default function DashboardCards() {
   ];
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 font-sans">
+    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 font-sans">
       {cards.map((card) => (
-        <div key={card.label} className={`rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgba(16,32,51,0.06)] transition duration-200 ${card.bgClass}`}>
+        <div 
+          key={card.label} 
+          className={`relative rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgba(16,32,51,0.06)] transition duration-200 ${card.bgClass} ${
+            (card as any).highlight ? 'ring-2 ring-amber-400/30' : ''
+          }`}
+        >
+          {(card as any).highlight && (
+            <div className="absolute top-3 right-3">
+              <span className="flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+              </span>
+            </div>
+          )}
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-semibold text-[#5f6b76]">{card.label}</p>
-              <p className="mt-3 text-4xl font-black tracking-tight text-[#102033]">{card.value}</p>
+              <p className={`mt-3 font-black tracking-tight text-[#102033] ${
+                (card as any).isRevenue ? 'text-2xl' : 'text-4xl'
+              }`}>
+                {card.value}
+              </p>
               <p className="mt-2 text-xs font-semibold text-[#9c9287]">{card.note}</p>
+              {(card as any).growth && <div className="mt-1">{(card as any).growth}</div>}
             </div>
             <div className={`grid h-12 w-12 place-items-center rounded-2xl ${card.iconBg}`}>{card.icon}</div>
           </div>

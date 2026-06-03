@@ -574,6 +574,68 @@ export default function BookingForm() {
                   />
                 </div>
 
+                {/* Booking Price Summary */}
+                {selectedPkg && (
+                  <div className="form-group booking-full animate-slide-down">
+                    <div style={{
+                      background: 'var(--teal-50, #f0fdfa)',
+                      border: '1.5px solid var(--teal-200, #99f6e4)',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      color: 'var(--teal-950, #042f2e)',
+                      fontSize: '14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      textAlign: 'left'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed rgba(13,148,136,0.2)', paddingBottom: '8px' }}>
+                        <span style={{ fontWeight: 700 }}>Tóm tắt đơn hàng:</span>
+                        <span style={{ fontWeight: 800, color: 'var(--teal-700, #0f766e)' }}>
+                          {selectedPkg.type === 'shared-seat' ? 'Xe ghép (Giá theo người)' : 'Bao xe (Nguyên chuyến)'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span>Hành trình:</span>
+                        <span style={{ fontWeight: 700 }}>{selectedPkg.routeName}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span>Dòng xe:</span>
+                        <span style={{ fontWeight: 700 }}>{selectedPkg.vehicleName}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span>Đơn giá:</span>
+                        <span style={{ fontWeight: 700 }}>
+                          {formatMoney(selectedPkg.price)}/{selectedPkg.type === 'shared-seat' ? 'người' : 'chuyến'}
+                        </span>
+                      </div>
+                      {selectedPkg.type === 'shared-seat' && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                          <span>Số lượng:</span>
+                          <span style={{ fontWeight: 700 }}>{passengerCount} người</span>
+                        </div>
+                      )}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        borderTop: '1px solid rgba(13,148,136,0.2)',
+                        paddingTop: '10px',
+                        marginTop: '4px'
+                      }}>
+                        <span style={{ fontWeight: 700, fontSize: '14px' }}>Tổng tiền thanh toán:</span>
+                        <span style={{
+                          fontWeight: 900,
+                          fontSize: '20px',
+                          color: '#c88925', // matching theme color
+                        }}>
+                          {formatMoney(selectedPkg.type === 'shared-seat' ? selectedPkg.price * passengerCount : selectedPkg.price)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Submit button */}
                 <div className="booking-full" style={{ marginTop: '8px' }}>
                   <button

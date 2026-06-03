@@ -62,7 +62,6 @@ export default function TodaySchedule() {
                           {trip.travelTime}
                         </span>
                       )}
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{trip.code}</span>
                     </div>
                     <h4 className="font-bold text-[#102033] mt-0.5 text-sm">{trip.customerName}</h4>
                   </div>

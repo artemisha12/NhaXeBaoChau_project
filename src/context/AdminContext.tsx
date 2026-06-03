@@ -171,6 +171,45 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Sync data from localStorage when another tab writes to it (e.g. landing page booking)
+  // Also sync when the admin tab regains focus (visibilitychange)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const syncFromStorage = () => {
+      const storedBookings = localStorage.getItem('bc_bookings');
+      if (storedBookings) {
+        try { setBookings(JSON.parse(storedBookings)); } catch {}
+      }
+      const storedHistory = localStorage.getItem('bc_booking_history');
+      if (storedHistory) {
+        try { setBookingHistory(JSON.parse(storedHistory)); } catch {}
+      }
+    };
+
+    // Listen for changes from other tabs
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === 'bc_bookings' || e.key === 'bc_booking_history') {
+        syncFromStorage();
+      }
+    };
+
+    // Also sync when tab becomes visible again (covers same-tab navigation)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromStorage();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageEvent);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
   // Save helpers
   const saveToLocal = (key: string, data: any) => {
     if (typeof window !== 'undefined') {
