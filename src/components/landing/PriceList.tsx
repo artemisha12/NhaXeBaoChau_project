@@ -2,255 +2,108 @@
 import { useState, useEffect } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 
-const PRICES = [
-  // shared (Đi ghép)
-  {
-    id: 's-hue-danang-limo',
-    type: 'shared',
-    category: 'limousine',
-    route: 'Huế ⇄ Đà Nẵng',
-    vehicleName: 'Xe Limousine VIP',
-    vehicleSub: 'Limousine (9 chỗ)',
-    info: '100 km • ~2 giờ 30 phút',
-    price: 200000,
-    unit: '/ghế',
-  },
-  {
-    id: 's-hue-hoian-limo',
-    type: 'shared',
-    category: 'limousine',
-    route: 'Huế ⇄ Hội An',
-    vehicleName: 'Xe Limousine VIP',
-    vehicleSub: 'Limousine (9 chỗ)',
-    info: '130 km • ~3 giờ',
-    price: 250000,
-    unit: '/ghế',
-  },
-  {
-    id: 's-danang-hoian-sedan',
-    type: 'shared',
-    category: 'sedan',
-    route: 'Đà Nẵng ⇄ Hội An',
-    vehicleName: 'Xe Sedan Tiêu chuẩn',
-    vehicleSub: 'Sedan (4 chỗ)',
-    info: '30 km • ~45 phút',
-    price: 150000,
-    unit: '/ghế',
-  },
-  {
-    id: 's-hue-airport-sedan',
-    type: 'shared',
-    category: 'sedan',
-    route: 'Sân bay Phú Bài ⇄ Đà Nẵng',
-    vehicleName: 'Xe Sedan Tiêu chuẩn',
-    vehicleSub: 'Sedan (4 chỗ)',
-    info: '90 km • ~1 giờ 45 phút',
-    price: 250000,
-    unit: '/ghế',
-  },
-
-  // charter (Bao xe)
-  {
-    id: 'c-hue-danang-sedan',
-    type: 'charter',
-    category: 'sedan',
-    route: 'Huế ⇄ Đà Nẵng',
-    vehicleName: 'Bao xe Sedan 4 chỗ',
-    vehicleSub: 'Toyota Camry / VF7',
-    info: '100 km • ~2 giờ',
-    price: 800000,
-    unit: '/chuyến',
-  },
-  {
-    id: 'c-hue-danang-carnival',
-    type: 'charter',
-    category: 'carnival',
-    route: 'Huế ⇄ Đà Nẵng',
-    vehicleName: 'Bao xe MPV 7 chỗ',
-    vehicleSub: 'Kia Carnival Royal',
-    info: '100 km • ~2 giờ',
-    price: 1200000,
-    unit: '/chuyến',
-  },
-  {
-    id: 'c-hue-danang-transit',
-    type: 'charter',
-    category: 'transit',
-    route: 'Huế ⇄ Đà Nẵng',
-    vehicleName: 'Bao xe Minibus 16 chỗ',
-    vehicleSub: 'Ford Transit',
-    info: '100 km • ~2 giờ',
-    price: 2000000,
-    unit: '/chuyến',
-  },
-  {
-    id: 'c-hue-hoian-sedan',
-    type: 'charter',
-    category: 'sedan',
-    route: 'Huế ⇄ Hội An',
-    vehicleName: 'Bao xe Sedan 4 chỗ',
-    vehicleSub: 'Toyota Camry / VF7',
-    info: '130 km • ~3 giờ',
-    price: 1300000,
-    unit: '/chuyến',
-  },
-  {
-    id: 'c-hue-hoian-carnival',
-    type: 'charter',
-    category: 'carnival',
-    route: 'Huế ⇄ Hội An',
-    vehicleName: 'Bao xe MPV 7 chỗ',
-    vehicleSub: 'Kia Carnival Royal',
-    info: '130 km • ~3 giờ',
-    price: 1800000,
-    unit: '/chuyến',
-  },
-  {
-    id: 'c-danang-hoian-sedan',
-    type: 'charter',
-    category: 'sedan',
-    route: 'Đà Nẵng ⇄ Hội An',
-    vehicleName: 'Bao xe Sedan 4 chỗ',
-    vehicleSub: 'Toyota Camry / VF7',
-    info: '30 km • ~45 phút',
-    price: 400000,
-    unit: '/chuyến',
-  },
-  {
-    id: 'c-danang-hoian-carnival',
-    type: 'charter',
-    category: 'carnival',
-    route: 'Đà Nẵng ⇄ Hội An',
-    vehicleName: 'Bao xe MPV 7 chỗ',
-    vehicleSub: 'Kia Carnival Royal',
-    info: '30 km • ~45 phút',
-    price: 600000,
-    unit: '/chuyến',
-  },
-];
-
-const sharedFilters = [
-  { value: 'all', label: 'Tất cả dòng xe' },
-  { value: 'sedan', label: 'Xe 4 chỗ (Sedan)' },
-  { value: 'limousine', label: 'Limousine 9 chỗ' },
-];
-
-const charterFilters = [
-  { value: 'all', label: 'Tất cả dòng xe' },
-  { value: 'sedan', label: 'Xe 4 chỗ (Sedan)' },
-  { value: 'carnival', label: 'Limousine 7 chỗ' },
-  { value: 'transit', label: 'Minibus 16 chỗ' },
-];
-
 function formatMoney(n: number) {
   return new Intl.NumberFormat('vi-VN').format(n) + 'đ';
 }
 
+function getVehicleCategory(vehicleName: string, description: string) {
+  const text = (vehicleName + ' ' + (description || '')).toLowerCase();
+  if (text.includes('16 chỗ') || text.includes('transit') || text.includes('minibus')) return 'transit';
+  if (text.includes('9 chỗ') || text.includes('limousine') || text.includes('vip')) return 'limousine';
+  if (text.includes('7 chỗ') || text.includes('carnival') || text.includes('7 cho')) return 'carnival';
+  if (text.includes('4 chỗ') || text.includes('4 cho')) return 'sedan';
+  return 'other';
+}
+
+function getCategoryLabel(cat: string) {
+  const map: Record<string, string> = {
+    sedan: 'Xe 4 chỗ (Sedan)',
+    limousine: 'Limousine 9 chỗ',
+    carnival: 'SUV / MPV 7 chỗ',
+    transit: 'Minibus 16 chỗ',
+    other: 'Xe khác',
+  };
+  return map[cat] || cat;
+}
+
 export default function PriceList() {
-  const { packages } = useAdmin();
+  const { packages, vehicles } = useAdmin();
   const [tab, setTab] = useState<'shared' | 'charter'>('shared');
-  const [carFilter, setCarFilter] = useState<string>('all');
+  const [routeFilter, setRouteFilter] = useState('all');
+  const [carFilter, setCarFilter] = useState('all');
 
-  const activePackages = packages.filter(pkg => pkg.status === 'active');
-  const dynamicPrices = activePackages.map(pkg => {
+  // Chỉ lấy packages của xe đang active
+  const activeVehicleNames = new Set(
+    vehicles.filter(v => v.status === 'active').map(v => v.name)
+  );
+  const activePackages = packages.filter(
+    p => p.status === 'active' && activeVehicleNames.has(p.vehicleName)
+  );
+
+  // Map sang display items từ DB
+  const allItems = activePackages.map(pkg => {
     const isShared = pkg.type === 'shared-seat';
-    let category = 'sedan';
-    let vehicleSub = '';
-    const vName = pkg.vehicleName.toLowerCase();
-    
-    if (vName.includes('limousine') || vName.includes('9 chỗ') || vName.includes('vip')) {
-      category = 'limousine';
-      vehicleSub = 'Limousine (9 chỗ)';
-    } else if (vName.includes('carnival') || vName.includes('7 chỗ')) {
-      category = 'carnival';
-      vehicleSub = 'Limousine (7 chỗ)';
-    } else if (vName.includes('transit') || vName.includes('16 chỗ') || vName.includes('minivan')) {
-      category = 'transit';
-      vehicleSub = 'Minibus (16 chỗ)';
-    } else {
-      category = 'sedan';
-      vehicleSub = 'Sedan (4 chỗ)';
-    }
-
+    const cat = getVehicleCategory(pkg.vehicleName, pkg.description || '');
     return {
       id: `pkg-${pkg.id}`,
       rawId: pkg.id,
       routeName: pkg.routeName,
-      type: isShared ? 'shared' : 'charter',
-      category,
       route: pkg.routeName.replace('→', '⇄'),
+      type: isShared ? 'shared' : 'charter',
+      category: cat,
       vehicleName: pkg.vehicleName,
-      vehicleSub,
+      vehicleSub: getCategoryLabel(cat),
       info: pkg.description || 'Xe đời mới • Đón trả tận nơi',
       price: pkg.price,
       unit: isShared ? '/ghế' : '/chuyến',
     };
   });
 
-  const displayPrices = dynamicPrices.length > 0 ? dynamicPrices : PRICES;
+  // Routes động theo tab
+  const tabItems = allItems.filter(i => i.type === tab);
+  const availableRoutes = Array.from(new Set(tabItems.map(i => i.routeName)));
+
+  // Tên xe thật đang hiện trong DB, theo tab + route
+  const routeItems = tabItems.filter(i => routeFilter === 'all' || i.routeName === routeFilter);
+  const availableVehicles = Array.from(new Set(routeItems.map(i => i.vehicleName)));
+
+  // Kết quả lọc cuối cùng — filter theo vehicleName thay vì category
+  const filteredItems = routeItems.filter(i => carFilter === 'all' || i.vehicleName === carFilter);
 
   const handleTabChange = (newTab: 'shared' | 'charter') => {
     setTab(newTab);
+    setRouteFilter('all');
+    setCarFilter('all');
+  };
+
+  const handleRouteChange = (r: string) => {
+    setRouteFilter(r);
     setCarFilter('all');
   };
 
   useEffect(() => {
     const handleSelectTab = (e: Event) => {
-      const customEvent = e as CustomEvent<{ tab: 'shared' | 'charter' }>;
-      if (customEvent.detail && customEvent.detail.tab) {
-        setTab(customEvent.detail.tab);
+      const ce = e as CustomEvent<{ tab: 'shared' | 'charter' }>;
+      if (ce.detail?.tab) {
+        setTab(ce.detail.tab);
+        setRouteFilter('all');
         setCarFilter('all');
       }
     };
     window.addEventListener('select-price-tab', handleSelectTab);
-    return () => {
-      window.removeEventListener('select-price-tab', handleSelectTab);
-    };
+    return () => window.removeEventListener('select-price-tab', handleSelectTab);
   }, []);
 
-  const handleBookNow = (item: any) => {
-    let pkgId = '';
-    let tripType = item.type === 'shared' ? 'shared-seat' : 'private-trip';
-    let routeName = '';
-
-    if (item.rawId) {
-      pkgId = String(item.rawId);
-      routeName = item.routeName;
-    } else {
-      const routeText = item.route.replace('⇄', '→');
-      const match = activePackages.find(
-        (p) => p.type === tripType && p.routeName.replace('→', '⇄') === item.route
-      );
-      if (match) {
-        pkgId = String(match.id);
-        routeName = match.routeName;
-      } else {
-        routeName = routeText;
-      }
-    }
-
-    // 1. Dispatch custom event to select package in booking form
-    window.dispatchEvent(
-      new CustomEvent('select-booking-pkg', {
-        detail: {
-          pkgId,
-          tripType,
-          routeName,
-        },
-      })
-    );
-
-    // 2. Scroll to booking form
-    document
-      .getElementById('booking-section')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const handleBookNow = (item: typeof filteredItems[0]) => {
+    window.dispatchEvent(new CustomEvent('select-booking-pkg', {
+      detail: {
+        pkgId: String(item.rawId),
+        tripType: item.type === 'shared' ? 'shared-seat' : 'private-trip',
+        routeName: item.routeName,
+      },
+    }));
+    document.getElementById('booking-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-
-  const filteredPrices = displayPrices.filter(
-    (p) => p.type === tab && (carFilter === 'all' || p.category === carFilter)
-  );
-
-  const currentFilters = tab === 'shared' ? sharedFilters : charterFilters;
 
   return (
     <section id="prices" className="section section-blue-soft">
@@ -263,38 +116,59 @@ export default function PriceList() {
           </p>
         </div>
 
-        {/* Tab Toggle */}
+        {/* Tab: Đi ghép / Bao xe */}
         <div className="price-tabs-container animate-fade-up delay-100">
           <div className="price-tabs-toggle">
-            <button
-              className={`price-tab-btn${tab === 'shared' ? ' active' : ''}`}
-              onClick={() => handleTabChange('shared')}
-            >
+            <button className={`price-tab-btn${tab === 'shared' ? ' active' : ''}`} onClick={() => handleTabChange('shared')}>
               Đi ghép
             </button>
-            <button
-              className={`price-tab-btn${tab === 'charter' ? ' active' : ''}`}
-              onClick={() => handleTabChange('charter')}
-            >
+            <button className={`price-tab-btn${tab === 'charter' ? ' active' : ''}`} onClick={() => handleTabChange('charter')}>
               Bao xe (Riêng tư)
             </button>
           </div>
         </div>
 
-        {/* Sub Filters */}
-        <div className="price-filters-container animate-fade-up delay-150">
-          {currentFilters.map((f) => (
+        {/* Lọc theo tuyến đường — động từ DB */}
+        <div className="price-filters-container animate-fade-up delay-120">
+          <button
+            className={`price-filter-btn${routeFilter === 'all' ? ' active' : ''}`}
+            onClick={() => handleRouteChange('all')}
+          >
+            Tất cả tuyến
+          </button>
+          {availableRoutes.map(r => (
             <button
-              key={f.value}
-              className={`price-filter-btn${carFilter === f.value ? ' active' : ''}`}
-              onClick={() => setCarFilter(f.value)}
+              key={r}
+              className={`price-filter-btn${routeFilter === r ? ' active' : ''}`}
+              onClick={() => handleRouteChange(r)}
             >
-              {f.label}
+              {r.replace('→', '⇄')}
             </button>
           ))}
         </div>
 
-        {/* Desktop Table View */}
+        {/* Lọc theo tên xe thật từ DB — chỉ hiện nếu có > 1 xe */}
+        {availableVehicles.length > 1 && (
+          <div className="price-filters-container animate-fade-up delay-150">
+            <button
+              className={`price-filter-btn${carFilter === 'all' ? ' active' : ''}`}
+              onClick={() => setCarFilter('all')}
+            >
+              Tất cả dòng xe
+            </button>
+            {availableVehicles.map(name => (
+              <button
+                key={name}
+                className={`price-filter-btn${carFilter === name ? ' active' : ''}`}
+                onClick={() => setCarFilter(name)}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Desktop — Bảng giá */}
         <div className="price-table-wrap price-table-desktop animate-fade-up delay-200">
           <table className="price-table">
             <thead>
@@ -307,11 +181,11 @@ export default function PriceList() {
               </tr>
             </thead>
             <tbody>
-              {filteredPrices.map((item) => (
+              {filteredItems.map(item => (
                 <tr key={item.id}>
                   <td className="col-route">
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: "var(--accent-600)" }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: 'var(--accent-600)' }}>
                         <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
                         <circle cx="12" cy="10" r="3" />
                       </svg>
@@ -328,19 +202,16 @@ export default function PriceList() {
                     <span className="col-price-unit">{item.unit}</span>
                   </td>
                   <td>
-                    <button
-                      className="price-book-btn"
-                      onClick={() => handleBookNow(item)}
-                    >
+                    <button className="price-book-btn" onClick={() => handleBookNow(item)}>
                       Đặt xe ngay
                     </button>
                   </td>
                 </tr>
               ))}
-              {filteredPrices.length === 0 && (
+              {filteredItems.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-                    Không tìm thấy thông tin tuyến đường phù hợp.
+                    Không tìm thấy gói xe phù hợp.
                   </td>
                 </tr>
               )}
@@ -348,13 +219,13 @@ export default function PriceList() {
           </table>
         </div>
 
-        {/* Mobile List View */}
+        {/* Mobile — Card list */}
         <div className="price-list-mobile price-table-mobile animate-fade-up delay-200">
-          {filteredPrices.map((item) => (
+          {filteredItems.map(item => (
             <div key={item.id} className="price-mobile-card">
               <div className="price-mob-row-top">
-                <span className="price-mob-route" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: "var(--accent-600)" }}>
+                <span className="price-mob-route" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: 'var(--accent-600)' }}>
                     <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
@@ -374,20 +245,18 @@ export default function PriceList() {
                 </div>
                 <span className="price-mob-info">{item.info}</span>
               </div>
-              <button
-                className="price-mob-btn"
-                onClick={() => handleBookNow(item)}
-              >
+              <button className="price-mob-btn" onClick={() => handleBookNow(item)}>
                 Đặt xe ngay
               </button>
             </div>
           ))}
-          {filteredPrices.length === 0 && (
+          {filteredItems.length === 0 && (
             <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-              Không tìm thấy thông tin tuyến đường phù hợp.
+              Không tìm thấy gói xe phù hợp.
             </div>
           )}
         </div>
+
       </div>
     </section>
   );

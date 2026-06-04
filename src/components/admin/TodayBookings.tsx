@@ -129,29 +129,29 @@ export default function TodayBookings() {
   };
 
   return (
-    <div className="rounded-3xl bg-[#fffdf8] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] font-sans h-full flex flex-col border-none">
-      <div className="flex items-center justify-between border-b border-[#e8dccb]/30 pb-4">
+    <div className="rounded-2xl bg-[#fffdf8] font-sans h-full flex flex-col border border-amber-100 overflow-hidden">
+      <div className="flex items-center justify-between px-6 border-b border-amber-100 min-h-[72px]">
         <div>
-          <h2 className="text-base font-black text-[#102033]">Đơn hôm nay</h2>
-          <p className="text-xs text-[#5f6b76] mt-0.5">Nhấn vào đơn để xem chi tiết và xử lý.</p>
+          <h2 className="text-base font-bold text-slate-900">Đơn hôm nay</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Nhấn vào đơn để xem chi tiết và xử lý.</p>
         </div>
-        <span className="rounded-xl bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-700">
+        <span className="rounded-xl bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700">
           {todayBookings.length} đơn
         </span>
       </div>
 
-      <div className="mt-4 flex-1 overflow-x-auto overflow-y-auto max-h-[520px] pr-1">
+      <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[520px]">
         {todayBookings.length > 0 ? (
           <table className="w-full text-sm min-w-[600px] sm:min-w-full">
             <thead>
-              <tr className="text-[10px] font-bold text-[#9c9287] uppercase tracking-wider border-b border-[#e8dccb]/20">
-                <th className="text-left py-3 pr-2">Đặt lúc</th>
-                <th className="text-left py-3 pr-2">Khách hàng</th>
-                <th className="text-left py-3 pr-2 hidden sm:table-cell">Tuyến</th>
-                <th className="text-left py-3 pr-2">Khởi hành</th>
-                <th className="text-center py-3 pr-2 hidden md:table-cell">Số khách</th>
-                <th className="text-right py-3 pr-2">Giá</th>
-                <th className="text-center py-3">Trạng thái</th>
+              <tr className="bg-[#123047] text-white text-[11px] font-semibold uppercase tracking-wider">
+                <th className="text-left pl-6 pr-3 py-3.5">Đặt lúc</th>
+                <th className="text-left px-3 py-3.5">Khách hàng</th>
+                <th className="text-left px-3 py-3.5 hidden sm:table-cell">Tuyến</th>
+                <th className="text-left px-3 py-3.5">Khởi hành</th>
+                <th className="text-center px-3 py-3.5 hidden md:table-cell">Số khách</th>
+                <th className="text-right px-3 py-3.5">Giá</th>
+                <th className="text-center pl-3 pr-6 py-3.5">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
@@ -161,12 +161,12 @@ export default function TodayBookings() {
                   <tr
                     key={booking.id}
                     onClick={() => handleOpenDetail(booking)}
-                    className={`border-b border-[#e8dccb]/15 transition duration-150 hover:bg-[#faf6ef]/60 cursor-pointer group ${
+                    className={`border-b border-amber-50 transition duration-150 hover:bg-slate-50 cursor-pointer group ${
                       isNew ? 'bg-amber-50/40' : ''
                     }`}
                   >
                     {/* Đặt lúc */}
-                    <td className="py-3.5 pr-2">
+                    <td className="pl-6 pr-3 py-3.5">
                       <div className="inline-flex items-center gap-1.5">
                         {isNew && (
                           <span className="relative flex h-2 w-2 shrink-0">
@@ -175,7 +175,7 @@ export default function TodayBookings() {
                           </span>
                         )}
                         {booking.createdAt ? (
-                          <span className="text-[11px] text-[#5f6b76] font-semibold">
+                          <span className="text-[11px] text-slate-600 font-semibold">
                             {new Date(booking.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
                             <span className="text-[10px] text-slate-400 ml-1">
                               {new Date(booking.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
@@ -189,7 +189,7 @@ export default function TodayBookings() {
 
                     {/* Khách hàng */}
                     <td className="py-3.5 pr-2">
-                      <p className="font-extrabold text-[#102033] text-[13px] leading-tight group-hover:text-[#c88925] transition">{booking.customerName}</p>
+                      <p className="font-semibold text-slate-900 text-[13px] leading-tight group-hover:text-[#c88925] transition">{booking.customerName}</p>
                       <span className="text-[11px] text-[#c88925] font-bold flex items-center gap-1 mt-0.5">
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -200,7 +200,7 @@ export default function TodayBookings() {
 
                     {/* Tuyến */}
                     <td className="py-3.5 pr-2 hidden sm:table-cell">
-                      <span className="text-[#102033] font-bold text-xs">{booking.routeName}</span>
+                      <span className="text-slate-900 font-bold text-xs">{booking.routeName}</span>
                       <p className="text-[10px] text-slate-500 truncate max-w-[180px] mt-0.5" title={booking.pickupAddress}>
                         Đón: {booking.pickupAddress}
                       </p>
@@ -214,25 +214,25 @@ export default function TodayBookings() {
                             {booking.travelTime}
                           </span>
                         )}
-                        <span className="text-xs font-bold text-[#102033]">
+                        <span className="text-xs font-bold text-slate-900">
                           {booking.travelDate.split('-').reverse().slice(0, 2).join('/')}
                         </span>
                       </div>
                     </td>
 
                     <td className="py-3.5 pr-2 text-center hidden md:table-cell">
-                      <span className="bg-[#f4f0e8] text-[#102033] font-black text-xs px-2 py-1 rounded-lg">
+                      <span className="bg-slate-100 text-slate-900 font-bold text-xs px-2 py-1 rounded-lg">
                         {booking.passengerCount}
                       </span>
                     </td>
 
-                    <td className="py-3.5 pr-2 text-right">
+                    <td className="py-3.5 px-3 text-right">
                       <span className="text-emerald-600 font-extrabold text-[13px]">
                         {formatMoney(booking.totalPrice)}
                       </span>
                     </td>
 
-                    <td className="py-3.5 text-center">
+                    <td className="py-3.5 pl-3 pr-6 text-center">
                       <StatusBadge status={booking.status} />
                     </td>
                   </tr>
@@ -241,7 +241,7 @@ export default function TodayBookings() {
             </tbody>
           </table>
         ) : (
-          <div className="text-center py-12 text-sm text-[#5f6b76] font-bold italic">
+          <div className="text-center py-12 text-sm text-slate-600 font-bold italic">
             Không có đơn nào trong hôm nay.
           </div>
         )}
@@ -250,9 +250,9 @@ export default function TodayBookings() {
       {/* ===== BOOKING DETAIL / PROCESS MODAL ===== */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#04101b]/50 p-4 font-sans backdrop-blur-sm">
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#fffdf8] shadow-2xl animate-fade-in border-none">
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl animate-fade-in border border-slate-200">
             {/* Modal Header */}
-            <div className="sticky top-0 flex items-center justify-between border-b border-[#e8dccb]/30 bg-[#fffdf8] px-6 py-5 z-10">
+            <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5 z-10">
               <div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={selectedBooking.status} />
@@ -262,11 +262,11 @@ export default function TodayBookings() {
                     </span>
                   )}
                 </div>
-                <h3 className="text-xl font-black text-[#102033] mt-1">{selectedBooking.customerName}</h3>
+                <h3 className="text-xl font-black text-slate-900 mt-1">{selectedBooking.customerName}</h3>
               </div>
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="rounded-2xl p-2.5 bg-[#fbfaf7] hover:bg-[#f6efe1] text-[#5f6b76] focus:outline-none transition border-none"
+                className="rounded-2xl p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 focus:outline-none transition border-none"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -279,31 +279,31 @@ export default function TodayBookings() {
             <div className="p-6 space-y-6">
               {/* Main Info Blocks */}
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl bg-[#fbfaf7] p-4 border-none shadow-[0_2px_8px_rgba(16,32,51,0.02)]">
-                  <h4 className="text-xs font-bold uppercase text-[#9c9287] tracking-wider mb-3">Thông tin khách hàng</h4>
-                  <div className="space-y-2 text-sm text-[#102033]">
+                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
+                  <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Thông tin khách hàng</h4>
+                  <div className="space-y-2 text-sm text-slate-900">
                     <p><strong>Họ và tên:</strong> {selectedBooking.customerName}</p>
                     <p><strong>Số điện thoại:</strong> <a href={`tel:${selectedBooking.phone}`} className="text-[#c88925] font-bold underline">{selectedBooking.phone}</a></p>
                     {selectedBooking.customerEmail && <p><strong>Email:</strong> {selectedBooking.customerEmail}</p>}
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-[#fbfaf7] p-4 border-none shadow-[0_2px_8px_rgba(16,32,51,0.02)]">
-                  <h4 className="text-xs font-bold uppercase text-[#9c9287] tracking-wider mb-3">Thông tin hành trình</h4>
-                  <div className="space-y-2 text-sm text-[#102033]">
+                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
+                  <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Thông tin hành trình</h4>
+                  <div className="space-y-2 text-sm text-slate-900">
                     <p><strong>Tuyến đường:</strong> {selectedBooking.routeName}</p>
                     <p><strong>Ngày khởi hành:</strong> {selectedBooking.travelDate} {selectedBooking.travelTime && <span className="font-black text-indigo-750 bg-indigo-50 px-1.5 py-0.5 rounded text-xs">{selectedBooking.travelTime}</span>}</p>
                     <p><strong>Số lượng:</strong> {selectedBooking.passengerCount} người</p>
 
                     {/* Edit Departure Time */}
-                    <div className="pt-2.5 border-t border-[#e8dccb]/30 mt-2.5">
+                    <div className="pt-2.5 border-t border-slate-200 mt-2.5">
                       <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cập nhật Giờ đi</label>
                       <div className="flex gap-2">
                         <input
                           type="time"
                           value={modalTravelTime}
                           onChange={(e) => setModalTravelTime(e.target.value)}
-                          className="rounded-xl border border-[#e8dccb]/60 bg-white text-[#102033] px-3 py-1.5 text-xs outline-none focus:border-[#c88925] font-sans"
+                          className="rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-1.5 text-xs outline-none focus:border-[#c88925] font-sans"
                         />
                         <button
                           type="button"
@@ -321,9 +321,9 @@ export default function TodayBookings() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-[#fbfaf7] p-4 border-none shadow-[0_2px_8px_rgba(16,32,51,0.02)] md:col-span-2">
-                  <h4 className="text-xs font-bold uppercase text-[#9c9287] tracking-wider mb-3">Địa điểm đưa đón</h4>
-                  <div className="space-y-2 text-sm text-[#102033]">
+                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 md:col-span-2">
+                  <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Địa điểm đưa đón</h4>
+                  <div className="space-y-2 text-sm text-slate-900">
                     <p className="flex items-center gap-1.5">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c88925" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                         <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
@@ -356,12 +356,12 @@ export default function TodayBookings() {
 
               {/* Status Update Section */}
               {getNextStatuses(selectedBooking.status).length > 0 && (
-                <div className="rounded-2xl bg-[#fbfaf7] p-5 border-none shadow-[0_2px_12px_rgba(16,32,51,0.02)]">
-                  <h4 className="text-sm font-black text-[#102033] mb-3">Cập nhật tiến trình đơn hàng</h4>
+                <div className="rounded-2xl bg-slate-50 p-5 border border-slate-200">
+                  <h4 className="text-sm font-black text-slate-900 mb-3">Cập nhật tiến trình đơn hàng</h4>
 
                   {isUpdatingStatus ? (
                     <div className="space-y-4">
-                      <p className="text-sm font-semibold text-[#102033]">
+                      <p className="text-sm font-semibold text-slate-900">
                         Xác nhận đổi trạng thái sang: <span className="text-[#c88925] font-black">
                           {isUpdatingStatus === 'confirmed' ? 'Đã xác nhận' : isUpdatingStatus === 'completed' ? 'Hoàn thành' : 'Đã hủy'}
                         </span>
@@ -371,7 +371,7 @@ export default function TodayBookings() {
                         value={statusChangeNote}
                         onChange={(e) => setStatusChangeNote(e.target.value)}
                         placeholder="Nhập lý do đổi trạng thái hoặc ghi chú đi kèm... (Không bắt buộc)"
-                        className="w-full rounded-2xl border-none p-3 text-sm outline-none bg-white text-[#102033] shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
+                        className="w-full rounded-2xl border border-slate-200 p-3 text-sm outline-none bg-white text-slate-900"
                       />
                       <div className="flex gap-2">
                         <button
@@ -382,7 +382,7 @@ export default function TodayBookings() {
                         </button>
                         <button
                           onClick={() => setIsUpdatingStatus(null)}
-                          className="rounded-2xl bg-[#f4f0e8] px-5 py-2.5 text-xs font-bold text-[#5f6b76] hover:bg-[#e7dfd2] transition border-none"
+                          className="rounded-2xl bg-slate-100 px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition border-none"
                         >
                           Hủy bỏ
                         </button>
@@ -407,21 +407,21 @@ export default function TodayBookings() {
 
               {/* Notes Section */}
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl p-4 bg-[#fbfaf7] shadow-[0_2px_8px_rgba(16,32,51,0.02)]">
-                  <h4 className="text-sm font-black text-[#102033] mb-2">Ghi chú của khách hàng</h4>
-                  <div className="text-sm text-[#5f6b76] bg-white p-3 rounded-xl min-h-[80px] shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                <div className="rounded-2xl p-4 bg-slate-50 border border-slate-200">
+                  <h4 className="text-sm font-black text-slate-900 mb-2">Ghi chú của khách hàng</h4>
+                  <div className="text-sm text-slate-600 bg-white p-3 rounded-xl min-h-[80px] border border-slate-200">
                     {selectedBooking.customerNote || 'Không có ghi chú nào từ khách hàng.'}
                   </div>
                 </div>
 
-                <div className="rounded-2xl p-4 bg-[#fbfaf7] shadow-[0_2px_8px_rgba(16,32,51,0.02)]">
-                  <h4 className="text-sm font-black text-[#102033] mb-2">Ghi chú nội bộ (Nhân viên)</h4>
+                <div className="rounded-2xl p-4 bg-slate-50 border border-slate-200">
+                  <h4 className="text-sm font-black text-slate-900 mb-2">Ghi chú nội bộ (Nhân viên)</h4>
                   <textarea
                     rows={3}
                     value={internalNoteInput}
                     onChange={(e) => setInternalNoteInput(e.target.value)}
                     placeholder="Chỉ nhân viên xem được: ví dụ đón ngã tư, khách có đồ cồng kềnh..."
-                    className="w-full rounded-xl p-3 text-sm outline-none bg-white text-[#102033] shadow-[0_2px_8px_rgba(0,0,0,0.02)] mb-2 border-none"
+                    className="w-full rounded-xl p-3 text-sm outline-none bg-white text-slate-900 border border-slate-200 mb-2"
                   />
                   <button
                     onClick={handleSaveInternalNote}
@@ -433,31 +433,31 @@ export default function TodayBookings() {
               </div>
 
               {/* History Logs */}
-              <div className="rounded-2xl p-5 bg-[#fbfaf7] shadow-[0_2px_8px_rgba(16,32,51,0.02)]">
-                <h4 className="text-sm font-black text-[#102033] mb-3">Lịch sử xử lý đơn</h4>
+              <div className="rounded-2xl p-5 bg-slate-50 border border-slate-200">
+                <h4 className="text-sm font-black text-slate-900 mb-3">Lịch sử xử lý đơn</h4>
                 <div className="space-y-3.5 max-h-[180px] overflow-y-auto pr-2">
                   {activeHistory.length > 0 ? (
                     activeHistory.map((log) => (
-                      <div key={log.id} className="relative pl-5 border-l-2 border-[#e8dccb] text-xs">
+                      <div key={log.id} className="relative pl-5 border-l-2 border-slate-200 text-xs">
                         <div className="absolute -left-[5.5px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#c88925]"></div>
-                        <p className="text-[#9c9287]">
+                        <p className="text-slate-400">
                           {new Date(log.changedAt).toLocaleString('vi-VN')} - <strong>{log.changedBy}</strong>
                         </p>
-                        <p className="mt-1 font-semibold text-[#102033]">
-                          Trạng thái: <span className="text-slate-500">{log.oldStatus === 'created' ? 'Mới' : log.oldStatus}</span> &rarr; <span className="text-[#102033] font-bold">{log.newStatus}</span>
+                        <p className="mt-1 font-semibold text-slate-900">
+                          Trạng thái: <span className="text-slate-500">{log.oldStatus === 'created' ? 'Mới' : log.oldStatus}</span> &rarr; <span className="text-slate-900 font-bold">{log.newStatus}</span>
                         </p>
-                        {log.note && <p className="mt-1 text-[#5f6b76] italic bg-white p-1.5 rounded-lg shadow-[0_2px_6px_rgba(0,0,0,0.01)]">&ldquo;{log.note}&rdquo;</p>}
+                        {log.note && <p className="mt-1 text-slate-600 italic bg-white p-1.5 rounded-lg border border-slate-100">&ldquo;{log.note}&rdquo;</p>}
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-[#9c9287] italic">Không có lịch sử thay đổi.</p>
+                    <p className="text-xs text-slate-400 italic">Không có lịch sử thay đổi.</p>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="sticky bottom-0 border-t border-[#e8dccb]/30 bg-[#fffdf8] px-6 py-4 flex justify-end z-10">
+            <div className="sticky bottom-0 border-t border-slate-200 bg-white px-6 py-4 flex justify-end z-10">
               <button
                 onClick={() => setSelectedBooking(null)}
                 className="rounded-2xl bg-[#04101b] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#123047] transition border-none"

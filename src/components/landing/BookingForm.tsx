@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '@/context/AdminContext';
+import { addBookingAction } from '@/app/actions/bookings/actions';
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("vi-VN").format(value) + "đ";
 }
 
 export default function BookingForm() {
-  const { packages, vehicles, addBooking } = useAdmin();
+  const { packages, routes, vehicles } = useAdmin();
+  const [submitError, setSubmitError] = useState('');
+  const activeRoutes = routes.filter(r => r.status === 'active');
   const [submitting, setSubmitting] = useState(false);
   const [bookingCode, setBookingCode] = useState('');
 
@@ -45,22 +48,27 @@ export default function BookingForm() {
     };
   }, []);
 
-  // Group active packages
-  const activePackages = packages.filter(p => p.status === 'active');
+  // Chỉ hiển thị packages của xe đang active
+  const activeVehicleNames = new Set(
+    vehicles.filter(v => v.status === 'active').map(v => v.name)
+  );
+  const activePackages = packages.filter(
+    p => p.status === 'active' && activeVehicleNames.has(p.vehicleName)
+  );
   const filteredPackages = activePackages.filter(p => p.type === tripType);
-  const availableRoutes = Array.from(new Set(filteredPackages.map(p => p.routeName)));
+  // Dùng routes từ DB thay vì derive từ packages — hiển thị đầy đủ tuyến đường
+  const availableRouteNames = activeRoutes.map(r => `${r.from} → ${r.to}`);
 
-  // Sync selectedRoute when tripType / packages change
+  // Sync selectedRoute when tripType / routes change
   useEffect(() => {
-    const routeList = Array.from(new Set(activePackages.filter(p => p.type === tripType).map(p => p.routeName)));
-    if (routeList.length > 0) {
-      if (!routeList.includes(selectedRoute)) {
-        setSelectedRoute(routeList[0]);
+    if (availableRouteNames.length > 0) {
+      if (!availableRouteNames.includes(selectedRoute)) {
+        setSelectedRoute(availableRouteNames[0]);
       }
     } else {
       setSelectedRoute('');
     }
-  }, [tripType, packages]);
+  }, [tripType, routes]);
 
   // Sync selectedPkgId when selectedRoute / tripType change
   const packagesForRouteAndType = filteredPackages.filter(p => p.routeName === selectedRoute);
@@ -139,87 +147,68 @@ export default function BookingForm() {
     travelTime
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
+    setSubmitError('');
 
-    // Show visual alerts if the user clicks while invalid
-    if (!selectedRoute) {
-      alert('Vui lòng chọn Tuyến đường.');
-      return;
-    }
-    if (!selectedPkgId) {
-      alert('Vui lòng chọn Gói xe ở bên trái.');
-      return;
-    }
-    if (!customerName.trim()) {
-      alert('Vui lòng nhập Họ và tên.');
-      return;
-    }
+    if (!selectedRoute) { alert('Vui lòng chọn Tuyến đường.'); return; }
+    if (!selectedPkgId) { alert('Vui lòng chọn Gói xe ở bên trái.'); return; }
+    if (!customerName.trim()) { alert('Vui lòng nhập Họ và tên.'); return; }
     const cleanPhone = phone.replace(/\D/g, '');
     if (!cleanPhone.match(/^(0[3|5|7|8|9])[0-9]{8}$/)) {
-      alert('Vui lòng nhập Số điện thoại hợp lệ (10 số, ví dụ: 0905123456).');
-      return;
+      alert('Vui lòng nhập Số điện thoại hợp lệ (10 số, ví dụ: 0905123456).'); return;
     }
-    if (!pickupAddress.trim()) {
-      alert('Vui lòng nhập Địa chỉ đón.');
-      return;
-    }
-    if (!dropoffAddress.trim()) {
-      alert('Vui lòng nhập Địa chỉ trả.');
-      return;
-    }
-    if (!travelDate) {
-      alert('Vui lòng chọn Ngày đi.');
-      return;
-    }
-    if (!travelTime) {
-      alert('Vui lòng chọn Giờ đi.');
-      return;
-    }
+    if (!pickupAddress.trim()) { alert('Vui lòng nhập Địa chỉ đón.'); return; }
+    if (!dropoffAddress.trim()) { alert('Vui lòng nhập Địa chỉ trả.'); return; }
+    if (!travelDate) { alert('Vui lòng chọn Ngày đi.'); return; }
+    if (!travelTime) { alert('Vui lòng chọn Giờ đi.'); return; }
 
     const selectedPkg = activePackages.find(p => p.id === Number(selectedPkgId));
     if (!selectedPkg) return;
 
     setSubmitting(true);
 
-    // Calculate total price
     const unitPrice = selectedPkg.price;
     const isShared = selectedPkg.type === 'shared-seat';
     const totalPrice = isShared ? unitPrice * passengerCount : unitPrice;
 
-    // Simulate network submission delay
-    setTimeout(() => {
-      const newBooking = addBooking({
-        customerName,
-        phone: cleanPhone, // Save normalized phone number
-        routeName: selectedPkg.routeName,
-        travelDate,
-        travelTime,
-        pickupAddress,
-        dropoffAddress,
-        passengerCount: isShared ? passengerCount : 1, // Set to 1 if private trip
-        totalPrice,
-        priceAtBooking: unitPrice,
-        customerEmail,
-        customerNote,
-      });
+    const result = await addBookingAction({
+      customerName,
+      phone: cleanPhone,
+      routeName: selectedPkg.routeName,
+      packageId: selectedPkg.id,
+      travelDate,
+      travelTime,
+      pickupAddress,
+      dropoffAddress,
+      passengerCount: isShared ? passengerCount : 1,
+      totalPrice,
+      priceAtBooking: unitPrice,
+      customerEmail,
+      customerNote,
+    });
 
-      setBookingCode(newBooking.code);
-      setSubmitting(false);
+    setSubmitting(false);
 
-      // Reset form fields
-      setCustomerName('');
-      setPhone('');
-      setSelectedPkgId('');
-      setPickupAddress('');
-      setDropoffAddress('');
-      setTravelDate('');
-      setTravelTime('');
-      setPassengerCount(1);
-      setCustomerEmail('');
-      setCustomerNote('');
-    }, 1000);
+    if (!result.success) {
+      setSubmitError(result.error || 'Đặt vé thất bại. Vui lòng thử lại.');
+      return;
+    }
+
+    setBookingCode(result.data?.code || 'BC-???');
+
+    // Reset form
+    setCustomerName('');
+    setPhone('');
+    setSelectedPkgId('');
+    setPickupAddress('');
+    setDropoffAddress('');
+    setTravelDate('');
+    setTravelTime('');
+    setPassengerCount(1);
+    setCustomerEmail('');
+    setCustomerNote('');
   };
 
   return (
@@ -323,8 +312,8 @@ export default function BookingForm() {
                     </div>
                     {routeDropdownOpen && (
                       <div className="custom-select-options">
-                        {availableRoutes.length > 0 ? (
-                          availableRoutes.map(route => (
+                        {availableRouteNames.length > 0 ? (
+                          availableRouteNames.map(route => (
                             <div 
                               key={route} 
                               className={`custom-select-option ${selectedRoute === route ? 'selected' : ''}`}
@@ -663,6 +652,12 @@ export default function BookingForm() {
                       </>
                     )}
                   </button>
+
+                  {submitError && (
+                    <p style={{ textAlign: 'center', marginTop: '10px', fontSize: '13px', color: '#e53e3e', fontWeight: 600 }}>
+                      ⚠ {submitError}
+                    </p>
+                  )}
 
                   {/* Caption advice when button is inactive */}
                   <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '13px', color: 'var(--text-secondary)' }}>

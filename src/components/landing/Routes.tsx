@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useAdmin } from '@/context/AdminContext';
+import { addBookingAction } from '@/app/actions/bookings/actions';
 
 const RealMap = dynamic(() => import('./RealMap'), {
   ssr: false,
@@ -13,17 +14,12 @@ const RealMap = dynamic(() => import('./RealMap'), {
   ),
 });
 
-const ROUTES_DATA = [
-  { from: 'Huế', to: 'Đà Nẵng', note: '~2 giờ · 100 km', key: 'hue-danang' },
-  { from: 'Huế', to: 'Hội An', note: '~3 giờ · 130 km', key: 'hue-hoian' },
-  { from: 'Đà Nẵng', to: 'Hội An', note: '~45 phút · 30 km', key: 'danang-hoian' },
-  { from: 'Sân bay Phú Bài', to: 'Đà Nẵng', note: '~1.5 giờ · 90 km', key: 'phuochai-danang' },
-];
 
 const HOURS = Array.from({ length: 17 }, (_, i) => `${String(i + 5).padStart(2, '0')}:00`);
 
 export default function Routes() {
-  const { packages, addBooking } = useAdmin();
+  const { packages, routes, vehicles } = useAdmin();
+  const activeRoutes = routes.filter(r => r.status === 'active');
 
   const [open, setOpen] = useState(false);
   const [routeLabel, setRouteLabel] = useState('');
@@ -41,8 +37,13 @@ export default function Routes() {
   // Map client tripType to admin package type
   const mappedType = tripType === 'shared' ? 'shared-seat' : 'private-trip';
   
-  // Filter active packages for selected route and type
-  const activePackages = packages.filter(p => p.status === 'active');
+  // Chỉ hiển thị packages của xe đang active
+  const activeVehicleNames = new Set(
+    vehicles.filter(v => v.status === 'active').map(v => v.name)
+  );
+  const activePackages = packages.filter(
+    p => p.status === 'active' && activeVehicleNames.has(p.vehicleName)
+  );
   const routePackages = activePackages.filter(
     p => p.routeName === routeLabel && p.type === mappedType
   );
@@ -71,12 +72,9 @@ export default function Routes() {
     setOpen(true);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedPkgId) {
-      alert('Vui lòng chọn tuyến đường và gói xe.');
-      return;
-    }
+    if (!selectedPkgId) { alert('Vui lòng chọn tuyến đường và gói xe.'); return; }
 
     const selectedPkg = activePackages.find(p => String(p.id) === selectedPkgId);
     if (!selectedPkg) return;
@@ -87,32 +85,31 @@ export default function Routes() {
     const isShared = selectedPkg.type === 'shared-seat';
     const totalPrice = isShared ? unitPrice * Number(pax) : unitPrice;
 
-    setTimeout(() => {
-      addBooking({
-        customerName: name,
-        phone,
-        routeName: selectedPkg.routeName,
-        travelDate: date,
-        travelTime: time,
-        pickupAddress: pickup,
-        dropoffAddress: dropoff,
-        passengerCount: Number(pax),
-        totalPrice,
-        priceAtBooking: unitPrice,
-      });
+    const result = await addBookingAction({
+      customerName: name,
+      phone,
+      routeName: selectedPkg.routeName,
+      packageId: Number(selectedPkgId),
+      travelDate: date,
+      travelTime: time,
+      pickupAddress: pickup,
+      dropoffAddress: dropoff,
+      passengerCount: Number(pax),
+      totalPrice,
+      priceAtBooking: unitPrice,
+    });
 
-      setOpen(false); 
-      setSent(false);
-      setName(''); 
-      setPhone(''); 
-      setPickup(''); 
-      setDropoff('');
-      setDate(''); 
-      setTime('07:00'); 
-      setPax('1');
-      setSelectedPkgId('');
-      alert('Đặt vé thành công! Nhân viên nhà xe sẽ liên hệ xác nhận sớm nhất.');
-    }, 1500);
+    setSent(false);
+
+    if (!result.success) {
+      alert('Đặt vé thất bại: ' + (result.error || 'Vui lòng thử lại.'));
+      return;
+    }
+
+    setOpen(false);
+    setName(''); setPhone(''); setPickup(''); setDropoff('');
+    setDate(''); setTime('07:00'); setPax('1'); setSelectedPkgId('');
+    alert(`Đặt vé thành công! Mã đơn: ${result.data?.code || ''}. Nhân viên sẽ liên hệ xác nhận sớm nhất.`);
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -144,9 +141,9 @@ export default function Routes() {
             <p className="routes-popular-label">Tuyến phổ biến</p>
 
             <ul className="routes-list">
-              {ROUTES_DATA.map((r) => (
+              {activeRoutes.map((r) => (
                 <li
-                  key={r.key}
+                  key={r.id}
                   className="routes-list-item"
                   onClick={() => openModal(`${r.from} → ${r.to}`)}
                 >
@@ -155,7 +152,7 @@ export default function Routes() {
                     <span className="routes-list-arrows">⇄</span>
                     <span className="routes-list-to">{r.to}</span>
                   </div>
-                  <span className="routes-list-note">{r.note}</span>
+                  <span className="routes-list-note">~{r.duration} · {r.distanceKm} km</span>
                   <span className="routes-list-chevron">›</span>
                 </li>
               ))}
@@ -254,8 +251,8 @@ export default function Routes() {
                       required
                     >
                       <option value="">— Chọn tuyến —</option>
-                      {ROUTES_DATA.map((r) => (
-                        <option key={r.key} value={`${r.from} → ${r.to}`}>
+                      {activeRoutes.map((r) => (
+                        <option key={r.id} value={`${r.from} → ${r.to}`}>
                           {r.from} → {r.to}
                         </option>
                       ))}

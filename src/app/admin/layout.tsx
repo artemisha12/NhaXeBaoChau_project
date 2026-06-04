@@ -46,12 +46,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div 
-      className="flex h-screen text-[#102033] font-sans overflow-hidden relative"
-      style={{
-        background: 'radial-gradient(circle at top left, rgba(229, 170, 53, 0.05), transparent 35%), linear-gradient(180deg, #fffdf8 0%, #f7f2e8 100%)'
-      }}
-    >
+    <div className="admin-root flex h-screen text-slate-900 overflow-hidden" style={{ background: 'linear-gradient(160deg, #fdf8f0 0%, #f7f0e2 100%)' }}>
       {/* Desktop Sidebar (hidden on mobile, visible on desktop) */}
       <Sidebar />
 

@@ -14,15 +14,21 @@ export default function RouteTable() {
   // Form states
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [distanceKm, setDistanceKm] = useState(100);
+  const [distanceKm, setDistanceKm] = useState<string>('');
   const [duration, setDuration] = useState('');
+
+  // Async states
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   const handleOpenAdd = () => {
     setEditingRoute(null);
     setFrom('');
     setTo('');
-    setDistanceKm(50);
-    setDuration('1 giờ');
+    setDistanceKm('');
+    setDuration('');
+    setErrorMsg('');
     setIsOpen(true);
   };
 
@@ -30,33 +36,35 @@ export default function RouteTable() {
     setEditingRoute(route);
     setFrom(route.from);
     setTo(route.to);
-    setDistanceKm(route.distanceKm);
+    setDistanceKm(String(route.distanceKm));
     setDuration(route.duration);
+    setErrorMsg('');
     setIsOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!from || !to || !duration) return;
+    const km = parseFloat(distanceKm);
+    if (!from || !to || !duration || !km) return;
+    setSaving(true);
+    setErrorMsg('');
 
-    if (editingRoute) {
-      updateRoute(editingRoute.id, {
-        from,
-        to,
-        distanceKm,
-        duration,
-        status: editingRoute.status
-      });
+    const result = editingRoute
+      ? await updateRoute(editingRoute.id, { from, to, distanceKm: km, duration, status: editingRoute.status })
+      : await addRoute({ from, to, distanceKm: km, duration });
+
+    setSaving(false);
+    if (result.success) {
+      setIsOpen(false);
     } else {
-      addRoute({
-        from,
-        to,
-        distanceKm,
-        duration
-      });
+      setErrorMsg(result.error || 'Đã xảy ra lỗi. Vui lòng thử lại.');
     }
+  };
 
-    setIsOpen(false);
+  const handleToggle = async (id: number) => {
+    setTogglingId(id);
+    await toggleRouteStatus(id);
+    setTogglingId(null);
   };
 
   return (
@@ -123,15 +131,16 @@ export default function RouteTable() {
                     >
                       Sửa
                     </button>
-                    <button 
-                      onClick={() => toggleRouteStatus(route.id)}
-                      className={`rounded-2xl px-3.5 py-1.5 text-xs font-bold transition border-none ${
+                    <button
+                      onClick={() => handleToggle(route.id)}
+                      disabled={togglingId === route.id}
+                      className={`rounded-2xl px-3.5 py-1.5 text-xs font-bold transition border-none disabled:opacity-50 ${
                         route.status === 'active'
                           ? 'bg-rose-50 text-rose-800 hover:bg-rose-100'
                           : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                       }`}
                     >
-                      {route.status === 'active' ? 'Ẩn' : 'Hiện'}
+                      {togglingId === route.id ? '...' : route.status === 'active' ? 'Ẩn' : 'Hiện'}
                     </button>
                   </td>
                 </tr>
@@ -159,6 +168,10 @@ export default function RouteTable() {
                 </svg>
               </button>
             </div>
+
+            {errorMsg && (
+              <p className="mt-3 rounded-xl bg-rose-50 border border-rose-200 px-4 py-2.5 text-sm text-rose-700">{errorMsg}</p>
+            )}
 
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -191,7 +204,7 @@ export default function RouteTable() {
                   required
                   min={1}
                   value={distanceKm}
-                  onChange={(e) => setDistanceKm(Number(e.target.value))}
+                  onChange={(e) => setDistanceKm(e.target.value)}
                   placeholder="Ví dụ: 100" 
                   className="mt-1.5 w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
                 />
@@ -216,11 +229,12 @@ export default function RouteTable() {
                 >
                   Hủy bỏ
                 </button>
-                <button 
+                <button
                   type="submit"
-                  className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition border-none"
+                  disabled={saving}
+                  className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition border-none disabled:opacity-60"
                 >
-                  Lưu thay đổi
+                  {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>

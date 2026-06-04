@@ -51,4 +51,5 @@ export type Booking = {
   internalNote?: string;
   createdAt?: string;
   travelTime?: string;
+  packageId?: number;
 };

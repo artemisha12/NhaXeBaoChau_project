@@ -15,6 +15,40 @@ import {
   getAdminInfoAction,
 } from '@/app/actions/auth/actions';
 
+import {
+  getSiteSettings,
+  updateSiteSettingsAction,
+} from '@/app/actions/settings/actions';
+
+import {
+  getVehicles,
+  addVehicleAction,
+  updateVehicleAction,
+  toggleVehicleStatusAction,
+  deleteVehicleAction,
+} from '@/app/actions/vehicles/actions';
+
+import {
+  getPackages,
+  addPackageAction,
+  updatePackageAction,
+  togglePackageStatusAction,
+} from '@/app/actions/packages/actions';
+
+import {
+  getRoutes,
+  addRouteAction,
+  updateRouteAction,
+  toggleRouteStatusAction,
+} from '@/app/actions/routes/actions';
+
+import {
+  getBookings,
+  updateBookingStatusAction,
+  updateBookingInternalNoteAction,
+  updateBookingTravelTimeAction,
+} from '@/app/actions/bookings/actions';
+
 export type SiteSettings = {
   hotline: string;
   zaloPhone: string;
@@ -75,22 +109,23 @@ type AdminContextType = {
   updateBookingTravelTime: (bookingId: number, travelTime: string) => void;
 
   // Vehicles CRUD
-  addVehicle: (vehicle: Omit<Vehicle, 'id' | 'status'>) => void;
-  updateVehicle: (id: number, vehicle: Omit<Vehicle, 'id'>) => void;
-  toggleVehicleStatus: (id: number) => void;
+  addVehicle: (vehicle: Omit<Vehicle, 'id' | 'status'>) => Promise<{ success: boolean; error?: string }>;
+  updateVehicle: (id: number, vehicle: Omit<Vehicle, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  toggleVehicleStatus: (id: number) => Promise<{ success: boolean; error?: string }>;
+  deleteVehicle: (id: number) => Promise<{ success: boolean; error?: string }>;
 
   // Routes CRUD
-  addRoute: (route: Omit<RouteItem, 'id' | 'status'>) => void;
-  updateRoute: (id: number, route: Omit<RouteItem, 'id'>) => void;
-  toggleRouteStatus: (id: number) => void;
+  addRoute: (route: Omit<RouteItem, 'id' | 'status'>) => Promise<{ success: boolean; error?: string }>;
+  updateRoute: (id: number, route: Omit<RouteItem, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  toggleRouteStatus: (id: number) => Promise<{ success: boolean; error?: string }>;
 
   // Packages CRUD
-  addPackage: (pkg: Omit<PricePackage, 'id' | 'status'>) => void;
-  updatePackage: (id: number, pkg: Omit<PricePackage, 'id'>) => void;
-  togglePackageStatus: (id: number) => void;
+  addPackage: (pkg: Omit<PricePackage, 'id' | 'status'>) => Promise<{ success: boolean; error?: string }>;
+  updatePackage: (id: number, pkg: Omit<PricePackage, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  togglePackageStatus: (id: number) => Promise<{ success: boolean; error?: string }>;
 
   // Settings
-  updateSiteSettings: (settings: Partial<SiteSettings>) => void;
+  updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<{ success: boolean; error?: string }>;
 };
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -134,14 +169,25 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const storedVehicles = localStorage.getItem('bc_vehicles');
-      if (storedVehicles) setVehicles(JSON.parse(storedVehicles));
+      // Load vehicles từ Supabase
+      getVehicles().then((dbVehicles) => {
+        if (dbVehicles.length > 0) setVehicles(dbVehicles);
+      }).catch(() => {});
 
-      const storedRoutes = localStorage.getItem('bc_routes');
-      if (storedRoutes) setRoutes(JSON.parse(storedRoutes));
+      // Load bookings từ Supabase (100 mới nhất cho dashboard)
+      getBookings().then((dbBookings) => {
+        if (dbBookings.length > 0) setBookings(dbBookings);
+      }).catch(() => {});
 
-      const storedPackages = localStorage.getItem('bc_packages');
-      if (storedPackages) setPackages(JSON.parse(storedPackages));
+      // Load routes từ Supabase (thay localStorage)
+      getRoutes().then((dbRoutes) => {
+        if (dbRoutes.length > 0) setRoutes(dbRoutes);
+      }).catch(() => {/* giữ mock-data nếu DB lỗi */});
+
+      // Load packages từ Supabase
+      getPackages().then((dbPackages) => {
+        if (dbPackages.length > 0) setPackages(dbPackages);
+      }).catch(() => {});
 
       const storedSettings = localStorage.getItem('bc_site_settings');
       if (storedSettings) setSiteSettings(JSON.parse(storedSettings));
@@ -149,7 +195,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const storedHistory = localStorage.getItem('bc_booking_history');
       if (storedHistory) setBookingHistory(JSON.parse(storedHistory));
 
-      // Gọi API Server Action để xác minh JWT session từ cookie httpOnly
+      // Load settings từ Supabase (chạy trên mọi trang — cả admin lẫn public)
+      getSiteSettings().then((dbSettings) => {
+        if (dbSettings) setSiteSettings(dbSettings);
+      }).catch(() => {/* giữ default nếu DB lỗi */});
+
+      // Xác minh JWT session từ cookie httpOnly
       const checkSession = async () => {
         try {
           const authRes = await getAdminInfoAction();
@@ -309,141 +360,122 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     return newBooking;
   };
 
-  const updateBookingStatus = (bookingId: number, status: BookingStatus, note: string) => {
-    const targetBooking = bookings.find((b) => b.id === bookingId);
-    if (!targetBooking) return;
-
-    const oldStatus = targetBooking.status;
-
-    const updatedBookings = bookings.map((b) =>
-      b.id === bookingId ? { ...b, status } : b
-    );
-    setBookings(updatedBookings);
-    saveToLocal('bc_bookings', updatedBookings);
-
-    // Record history
-    const historyItem: BookingHistoryItem = {
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      bookingId,
-      oldStatus,
-      newStatus: status,
-      note: note || `Đổi trạng thái đơn sang: ${status === 'confirmed' ? 'Đã xác nhận' : status === 'completed' ? 'Hoàn thành' : 'Đã hủy'}.`,
-      changedAt: new Date().toISOString(),
-      changedBy: adminUser || 'Nhân viên',
-    };
-    const updatedHistory = [historyItem, ...bookingHistory];
-    setBookingHistory(updatedHistory);
-    saveToLocal('bc_booking_history', updatedHistory);
+  const updateBookingStatus = async (bookingId: number, status: BookingStatus, note: string) => {
+    // Optimistic update
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status } : b));
+    const result = await updateBookingStatusAction(bookingId, status, note);
+    if (!result.success) {
+      // Rollback: reload từ DB
+      getBookings().then(db => setBookings(db)).catch(() => {});
+    } else {
+      // Thêm history entry locally
+      const historyItem: BookingHistoryItem = {
+        id: Date.now(),
+        bookingId,
+        oldStatus: bookings.find(b => b.id === bookingId)?.status || 'new',
+        newStatus: status,
+        note: note || '',
+        changedAt: new Date().toISOString(),
+        changedBy: adminUser || 'Nhân viên',
+      };
+      setBookingHistory(prev => [historyItem, ...prev]);
+    }
   };
 
-  const updateBookingInternalNote = (bookingId: number, note: string) => {
-    const updatedBookings = bookings.map((b) =>
-      b.id === bookingId ? { ...b, internalNote: note } : b
-    );
-    setBookings(updatedBookings);
-    saveToLocal('bc_bookings', updatedBookings);
+  const updateBookingInternalNote = async (bookingId: number, note: string) => {
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, internalNote: note } : b));
+    await updateBookingInternalNoteAction(bookingId, note);
   };
 
-  const updateBookingTravelTime = (bookingId: number, travelTime: string) => {
-    const updatedBookings = bookings.map((b) =>
-      b.id === bookingId ? { ...b, travelTime } : b
-    );
-    setBookings(updatedBookings);
-    saveToLocal('bc_bookings', updatedBookings);
+  const updateBookingTravelTime = async (bookingId: number, travelTime: string) => {
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, travelTime } : b));
+    await updateBookingTravelTimeAction(bookingId, travelTime);
   };
+
+  const reloadVehicles = async () => { const fresh = await getVehicles(); setVehicles(fresh); };
+  const reloadPackages = async () => { const fresh = await getPackages(); setPackages(fresh); };
 
   // Vehicles CRUD
-  const addVehicle = (vehicleData: Omit<Vehicle, 'id' | 'status'>) => {
-    const newId = vehicles.length > 0 ? Math.max(...vehicles.map((v) => v.id)) + 1 : 1;
-    const newVehicle: Vehicle = {
-      ...vehicleData,
-      id: newId,
-      status: 'active',
-    };
-    const updatedVehicles = [...vehicles, newVehicle];
-    setVehicles(updatedVehicles);
-    saveToLocal('bc_vehicles', updatedVehicles);
+  const addVehicle = async (vehicleData: Omit<Vehicle, 'id' | 'status'>): Promise<{ success: boolean; error?: string }> => {
+    const result = await addVehicleAction(vehicleData);
+    if (result.success) await reloadVehicles();
+    return result;
   };
 
-  const updateVehicle = (id: number, vehicleData: Omit<Vehicle, 'id'>) => {
-    const updatedVehicles = vehicles.map((v) =>
-      v.id === id ? { ...v, ...vehicleData } : v
-    );
-    setVehicles(updatedVehicles);
-    saveToLocal('bc_vehicles', updatedVehicles);
+  const updateVehicle = async (id: number, vehicleData: Omit<Vehicle, 'id'>): Promise<{ success: boolean; error?: string }> => {
+    const result = await updateVehicleAction(id, vehicleData);
+    if (result.success) await reloadVehicles();
+    return result;
   };
 
-  const toggleVehicleStatus = (id: number) => {
-    const updatedVehicles = vehicles.map((v) =>
-      v.id === id ? ({ ...v, status: v.status === 'active' ? 'hidden' : 'active' } as Vehicle) : v
-    );
-    setVehicles(updatedVehicles);
-    saveToLocal('bc_vehicles', updatedVehicles);
+  const toggleVehicleStatus = async (id: number): Promise<{ success: boolean; error?: string }> => {
+    const result = await toggleVehicleStatusAction(id);
+    if (result.success) await reloadVehicles();
+    return result;
   };
 
-  // Routes CRUD
-  const addRoute = (routeData: Omit<RouteItem, 'id' | 'status'>) => {
-    const newId = routes.length > 0 ? Math.max(...routes.map((r) => r.id)) + 1 : 1;
-    const newRoute: RouteItem = {
-      ...routeData,
-      id: newId,
-      status: 'active',
-    };
-    const updatedRoutes = [...routes, newRoute];
-    setRoutes(updatedRoutes);
-    saveToLocal('bc_routes', updatedRoutes);
+  const deleteVehicle = async (id: number): Promise<{ success: boolean; error?: string }> => {
+    const result = await deleteVehicleAction(id);
+    if (result.success) {
+      await reloadVehicles();
+      // Reload packages vì packages của xe này cũng bị soft-delete
+      const freshPkgs = await getPackages();
+      setPackages(freshPkgs);
+    }
+    return result;
   };
 
-  const updateRoute = (id: number, routeData: Omit<RouteItem, 'id'>) => {
-    const updatedRoutes = routes.map((r) =>
-      r.id === id ? { ...r, ...routeData } : r
-    );
-    setRoutes(updatedRoutes);
-    saveToLocal('bc_routes', updatedRoutes);
+  const reloadRoutes = async () => {
+    const fresh = await getRoutes();
+    setRoutes(fresh);
   };
 
-  const toggleRouteStatus = (id: number) => {
-    const updatedRoutes = routes.map((r) =>
-      r.id === id ? ({ ...r, status: r.status === 'active' ? 'hidden' : 'active' } as RouteItem) : r
-    );
-    setRoutes(updatedRoutes);
-    saveToLocal('bc_routes', updatedRoutes);
+  // Routes CRUD — persist to Supabase
+  const addRoute = async (routeData: Omit<RouteItem, 'id' | 'status'>): Promise<{ success: boolean; error?: string }> => {
+    const result = await addRouteAction(routeData);
+    if (result.success) await reloadRoutes();
+    return result;
+  };
+
+  const updateRoute = async (id: number, routeData: Omit<RouteItem, 'id'>): Promise<{ success: boolean; error?: string }> => {
+    const result = await updateRouteAction(id, routeData);
+    if (result.success) await reloadRoutes();
+    return result;
+  };
+
+  const toggleRouteStatus = async (id: number): Promise<{ success: boolean; error?: string }> => {
+    const result = await toggleRouteStatusAction(id);
+    if (result.success) await reloadRoutes();
+    return result;
   };
 
   // Packages CRUD
-  const addPackage = (packageData: Omit<PricePackage, 'id' | 'status'>) => {
-    const newId = packages.length > 0 ? Math.max(...packages.map((p) => p.id)) + 1 : 1;
-    const newPackage: PricePackage = {
-      ...packageData,
-      id: newId,
-      status: 'active',
-    };
-    const updatedPackages = [...packages, newPackage];
-    setPackages(updatedPackages);
-    saveToLocal('bc_packages', updatedPackages);
+  const addPackage = async (packageData: Omit<PricePackage, 'id' | 'status'>): Promise<{ success: boolean; error?: string }> => {
+    const result = await addPackageAction(packageData);
+    if (result.success) await reloadPackages();
+    return result;
   };
 
-  const updatePackage = (id: number, packageData: Omit<PricePackage, 'id'>) => {
-    const updatedPackages = packages.map((p) =>
-      p.id === id ? { ...p, ...packageData } : p
-    );
-    setPackages(updatedPackages);
-    saveToLocal('bc_packages', updatedPackages);
+  const updatePackage = async (id: number, packageData: Omit<PricePackage, 'id'>): Promise<{ success: boolean; error?: string }> => {
+    const result = await updatePackageAction(id, packageData);
+    if (result.success) await reloadPackages();
+    return result;
   };
 
-  const togglePackageStatus = (id: number) => {
-    const updatedPackages = packages.map((p) =>
-      p.id === id ? ({ ...p, status: p.status === 'active' ? 'hidden' : 'active' } as PricePackage) : p
-    );
-    setPackages(updatedPackages);
-    saveToLocal('bc_packages', updatedPackages);
+  const togglePackageStatus = async (id: number): Promise<{ success: boolean; error?: string }> => {
+    const result = await togglePackageStatusAction(id);
+    if (result.success) await reloadPackages();
+    return result;
   };
 
-  // Settings
-  const updateSiteSettings = (settingsData: Partial<SiteSettings>) => {
-    const updatedSettings = { ...siteSettings, ...settingsData };
-    setSiteSettings(updatedSettings);
-    saveToLocal('bc_site_settings', updatedSettings);
+  // Settings — persist to Supabase, optimistic update
+  const updateSiteSettings = async (settingsData: Partial<SiteSettings>): Promise<{ success: boolean; error?: string }> => {
+    const prev = siteSettings;
+    const updated = { ...siteSettings, ...settingsData };
+    setSiteSettings(updated); // optimistic
+    const result = await updateSiteSettingsAction(settingsData);
+    if (!result.success) setSiteSettings(prev); // rollback on error
+    return result;
   };
 
   return (
@@ -477,6 +509,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         addVehicle,
         updateVehicle,
         toggleVehicleStatus,
+        deleteVehicle,
 
         addRoute,
         updateRoute,

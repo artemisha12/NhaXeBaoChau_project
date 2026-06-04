@@ -98,8 +98,8 @@ function SmoothAreaChart({ data, maxValue, todayStr }: SmoothAreaChartProps) {
               y1={y}
               x2={leftPadding + plotWidth}
               y2={y}
-              stroke="#e8dccb"
-              strokeOpacity="0.45"
+              stroke="#e2e8f0"
+              strokeOpacity="0.6"
               strokeDasharray="4 4"
               strokeWidth="1"
             />
@@ -360,7 +360,7 @@ export default function RevenueChart() {
   ];
 
   return (
-    <div className="rounded-3xl bg-[#fffdf8] shadow-[0_8px_30px_rgb(0,0,0,0.02)] font-sans border-none overflow-hidden">
+    <div className="rounded-2xl bg-[#fffdf8] font-sans border border-amber-100 overflow-hidden">
       {/* ===== TOP SECTION: Dark Header with Summary ===== */}
       <div className="bg-gradient-to-r from-[#04101b] via-[#0a1d2c] to-[#123047] px-6 py-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -428,8 +428,8 @@ export default function RevenueChart() {
             {/* Chart header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
               <div>
-                <h4 className="text-sm font-black text-[#102033]">Doanh thu 7 ngày gần đây</h4>
-                <p className="text-[11px] text-[#9c9287] mt-0.5">
+                <h4 className="text-sm font-black text-slate-900">Doanh thu 7 ngày gần đây</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
                   Tổng: <span className="font-black text-[#c88925]">{formatMoney(totalWeekRevenue)}</span>
                   <span className="mx-1.5">·</span>
                   <span className="font-bold">{totalWeekOrders} đơn thành công</span>
@@ -438,8 +438,8 @@ export default function RevenueChart() {
 
               {/* Trip type split bar */}
               {totalPeriodRevenue > 0 && (
-                <div className="w-full md:w-64 bg-[#fbfaf7] p-2.5 rounded-2xl border-none shrink-0">
-                  <div className="flex justify-between text-[9px] font-bold text-[#5f6b76] mb-1">
+                <div className="w-full md:w-64 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shrink-0">
+                  <div className="flex justify-between text-[9px] font-bold text-slate-600 mb-1">
                     <span className="flex items-center gap-1">
                       <span className="h-2 w-2 rounded-full bg-[#c88925]"></span>
                       Xe ghép ({sharedPct}%)
@@ -449,11 +449,11 @@ export default function RevenueChart() {
                       Bao xe ({privatePct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-[#e8dccb]/30 h-1.5 rounded-full overflow-hidden flex">
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden flex">
                     <div className="h-full bg-gradient-to-r from-[#f8c95c] to-[#c88925]" style={{ width: `${sharedPct}%` }}></div>
                     <div className="h-full bg-gradient-to-r from-[#2d6fa0] to-[#123047]" style={{ width: `${privatePct}%` }}></div>
                   </div>
-                  <div className="flex justify-between text-[9px] font-black text-[#102033] mt-1">
+                  <div className="flex justify-between text-[9px] font-black text-slate-900 mt-1">
                     <span>{formatMoneyShort(sharedRevenue)}</span>
                     <span>{formatMoneyShort(privateRevenue)}</span>
                   </div>
@@ -464,7 +464,7 @@ export default function RevenueChart() {
             {/* Chart with Y-axis */}
             <div className="flex gap-3">
               {/* Y-axis labels */}
-              <div className="flex flex-col justify-between text-[10px] font-black text-[#9c9287] h-48 w-12 shrink-0 text-right pr-2 select-none py-1.5">
+              <div className="flex flex-col justify-between text-[10px] font-black text-slate-400 h-48 w-12 shrink-0 text-right pr-2 select-none py-1.5">
                 {yLabels.map((label, i) => (
                   <span key={i} className="leading-none">{label}</span>
                 ))}
@@ -487,7 +487,7 @@ export default function RevenueChart() {
                       <div className={`inline-block px-2 py-1 rounded-xl transition ${
                         isToday ? 'bg-[#c88925]/10' : ''
                       }`}>
-                        <p className={`text-[11px] font-black leading-tight ${isToday ? 'text-[#c88925]' : 'text-[#102033]'}`}>
+                        <p className={`text-[11px] font-black leading-tight ${isToday ? 'text-[#c88925]' : 'text-slate-900'}`}>
                           {day.dayName}
                         </p>
                         <p className={`text-[9px] font-bold mt-0.5 leading-none ${isToday ? 'text-[#c88925]' : 'text-slate-400'}`}>
@@ -500,34 +500,26 @@ export default function RevenueChart() {
               </div>
             </div>
 
-            {/* Fleet Owner Revenue Highlights */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-5 border-t border-[#e8dccb]/20 mt-4">
-              <div className="p-3.5 bg-[#fbfaf7] rounded-2xl border-none">
-                <p className="text-[10px] font-bold text-[#9c9287] uppercase tracking-wider">Ngày cao nhất</p>
-                <p className="text-sm font-black text-[#102033] mt-1 leading-tight">
+            {/* Stats strip */}
+            <div className="flex flex-col sm:flex-row gap-0 pt-4 border-t border-slate-200 mt-4">
+              <div className="flex-1 py-2 sm:py-0 sm:pr-6">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Ngày cao nhất</p>
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">
                   {peakDay.revenue > 0 ? `${peakDay.dayName} (${peakDay.label})` : '—'}
                 </p>
-                <p className="text-xs font-extrabold text-[#c88925] mt-0.5">
+                <p className="text-xs font-semibold text-[#c88925]">
                   {peakDay.revenue > 0 ? formatMoney(peakDay.revenue) : '0đ'}
                 </p>
               </div>
-              <div className="p-3.5 bg-[#fbfaf7] rounded-2xl border-none">
-                <p className="text-[10px] font-bold text-[#9c9287] uppercase tracking-wider">Hiệu suất đơn</p>
-                <p className="text-sm font-black text-[#102033] mt-1 leading-tight">
-                  {totalWeekOrders} đơn thành công
-                </p>
-                <p className="text-xs font-extrabold text-slate-500 mt-0.5">
-                  Trong 7 ngày qua
-                </p>
+              <div className="flex-1 py-2 sm:py-0 sm:px-6 sm:border-x border-slate-200">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Hiệu suất đơn</p>
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">{totalWeekOrders} đơn thành công</p>
+                <p className="text-xs text-slate-400">Trong 7 ngày qua</p>
               </div>
-              <div className="p-3.5 bg-[#fbfaf7] rounded-2xl border-none col-span-2 sm:col-span-1">
-                <p className="text-[10px] font-bold text-[#9c9287] uppercase tracking-wider">Trung bình/đơn</p>
-                <p className="text-sm font-black text-[#102033] mt-1 leading-tight">
-                  {formatMoney(averageBookingValue)}
-                </p>
-                <p className="text-xs font-extrabold text-emerald-600 mt-0.5">
-                  Giá trị trung bình
-                </p>
+              <div className="flex-1 py-2 sm:py-0 sm:pl-6">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Trung bình/đơn</p>
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">{formatMoney(averageBookingValue)}</p>
+                <p className="text-xs text-emerald-600 font-medium">Giá trị trung bình</p>
               </div>
             </div>
           </div>
@@ -537,8 +529,8 @@ export default function RevenueChart() {
             {/* Chart header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
               <div>
-                <h4 className="text-sm font-black text-[#102033]">Doanh thu tháng này (T{now.getMonth() + 1})</h4>
-                <p className="text-[11px] text-[#9c9287] mt-0.5">
+                <h4 className="text-sm font-black text-slate-900">Doanh thu tháng này (T{now.getMonth() + 1})</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
                   Tổng: <span className="font-black text-[#c88925]">{formatMoney(totalMonthRevenue)}</span>
                   <span className="mx-1.5">·</span>
                   <span className="font-bold">{totalMonthOrders} đơn thành công</span>
@@ -547,8 +539,8 @@ export default function RevenueChart() {
 
               {/* Trip type split bar */}
               {totalPeriodRevenue > 0 && (
-                <div className="w-full md:w-64 bg-[#fbfaf7] p-2.5 rounded-2xl border-none shrink-0">
-                  <div className="flex justify-between text-[9px] font-bold text-[#5f6b76] mb-1">
+                <div className="w-full md:w-64 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shrink-0">
+                  <div className="flex justify-between text-[9px] font-bold text-slate-600 mb-1">
                     <span className="flex items-center gap-1">
                       <span className="h-2 w-2 rounded-full bg-[#c88925]"></span>
                       Xe ghép ({sharedPct}%)
@@ -558,11 +550,11 @@ export default function RevenueChart() {
                       Bao xe ({privatePct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-[#e8dccb]/30 h-1.5 rounded-full overflow-hidden flex">
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden flex">
                     <div className="h-full bg-gradient-to-r from-[#f8c95c] to-[#c88925]" style={{ width: `${sharedPct}%` }}></div>
                     <div className="h-full bg-gradient-to-r from-[#2d6fa0] to-[#123047]" style={{ width: `${privatePct}%` }}></div>
                   </div>
-                  <div className="flex justify-between text-[9px] font-black text-[#102033] mt-1">
+                  <div className="flex justify-between text-[9px] font-black text-slate-900 mt-1">
                     <span>{formatMoneyShort(sharedRevenue)}</span>
                     <span>{formatMoneyShort(privateRevenue)}</span>
                   </div>
@@ -573,7 +565,7 @@ export default function RevenueChart() {
             {/* Chart with Y-axis */}
             <div className="flex gap-3">
               {/* Y-axis labels */}
-              <div className="flex flex-col justify-between text-[10px] font-black text-[#9c9287] h-48 w-12 shrink-0 text-right pr-2 select-none py-1.5">
+              <div className="flex flex-col justify-between text-[10px] font-black text-slate-400 h-48 w-12 shrink-0 text-right pr-2 select-none py-1.5">
                 {yLabels.map((label, i) => (
                   <span key={i} className="leading-none">{label}</span>
                 ))}
@@ -588,7 +580,7 @@ export default function RevenueChart() {
             {/* X-axis Days */}
             <div className="flex gap-3">
               <div className="w-12 shrink-0"></div>
-              <div className="flex-1 flex justify-between px-2 text-[10px] font-black text-[#9c9287] mt-3 select-none">
+              <div className="flex-1 flex justify-between px-2 text-[10px] font-black text-slate-400 mt-3 select-none">
                 {monthlyRevenueData.map((day, i) => {
                   const showLabel = i === 0 || i === monthlyRevenueData.length - 1 || (i + 1) % 5 === 0;
                   if (!showLabel) return <div key={day.date} className="w-0 h-0 overflow-hidden"></div>;
@@ -604,34 +596,26 @@ export default function RevenueChart() {
               </div>
             </div>
 
-            {/* Fleet Owner Monthly Highlights */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-5 border-t border-[#e8dccb]/20 mt-4">
-              <div className="p-3.5 bg-[#fbfaf7] rounded-2xl border-none">
-                <p className="text-[10px] font-bold text-[#9c9287] uppercase tracking-wider">Ngày cao nhất</p>
-                <p className="text-sm font-black text-[#102033] mt-1 leading-tight">
+            {/* Stats strip */}
+            <div className="flex flex-col sm:flex-row gap-0 pt-4 border-t border-slate-200 mt-4">
+              <div className="flex-1 py-2 sm:py-0 sm:pr-6">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Ngày cao nhất</p>
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">
                   {peakMonthDay.revenue > 0 ? `Ngày ${peakMonthDay.dayNum}` : '—'}
                 </p>
-                <p className="text-xs font-extrabold text-[#c88925] mt-0.5">
+                <p className="text-xs font-semibold text-[#c88925]">
                   {peakMonthDay.revenue > 0 ? formatMoney(peakMonthDay.revenue) : '0đ'}
                 </p>
               </div>
-              <div className="p-3.5 bg-[#fbfaf7] rounded-2xl border-none">
-                <p className="text-[10px] font-bold text-[#9c9287] uppercase tracking-wider">Hiệu suất đơn</p>
-                <p className="text-sm font-black text-[#102033] mt-1 leading-tight">
-                  {totalMonthOrders} đơn thành công
-                </p>
-                <p className="text-xs font-extrabold text-slate-500 mt-0.5">
-                  Trong tháng này
-                </p>
+              <div className="flex-1 py-2 sm:py-0 sm:px-6 sm:border-x border-slate-200">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Hiệu suất đơn</p>
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">{totalMonthOrders} đơn thành công</p>
+                <p className="text-xs text-slate-400">Trong tháng này</p>
               </div>
-              <div className="p-3.5 bg-[#fbfaf7] rounded-2xl border-none col-span-2 sm:col-span-1">
-                <p className="text-[10px] font-bold text-[#9c9287] uppercase tracking-wider">Trung bình/đơn</p>
-                <p className="text-sm font-black text-[#102033] mt-1 leading-tight">
-                  {formatMoney(averageMonthBookingValue)}
-                </p>
-                <p className="text-xs font-extrabold text-emerald-600 mt-0.5">
-                  Giá trị trung bình
-                </p>
+              <div className="flex-1 py-2 sm:py-0 sm:pl-6">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Trung bình/đơn</p>
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">{formatMoney(averageMonthBookingValue)}</p>
+                <p className="text-xs text-emerald-600 font-medium">Giá trị trung bình</p>
               </div>
             </div>
           </div>
@@ -639,8 +623,8 @@ export default function RevenueChart() {
           /* ====== ROUTE REVENUE ====== */
           <div className="space-y-5">
             <div>
-              <h4 className="text-sm font-black text-[#102033]">Phân tích doanh thu theo tuyến</h4>
-              <p className="text-[11px] text-[#9c9287] mt-0.5">
+              <h4 className="text-sm font-black text-slate-900">Phân tích doanh thu theo tuyến</h4>
+              <p className="text-[11px] text-slate-400 mt-0.5">
                 Tổng doanh thu: <span className="font-black text-[#c88925]">{formatMoney(totalRouteRevenue)}</span>
               </p>
             </div>
@@ -663,9 +647,9 @@ export default function RevenueChart() {
                             className="h-3 w-3 rounded-full shrink-0 shadow-sm"
                             style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
                           />
-                          <span className="font-extrabold text-[#102033] text-sm">{route.name}</span>
+                          <span className="font-semibold text-slate-900 text-sm">{route.name}</span>
                           <div className="flex gap-1.5">
-                            <span className="text-[10px] font-bold bg-white/80 text-[#5f6b76] px-2 py-0.5 rounded-lg shadow-sm">
+                            <span className="text-[10px] font-bold bg-white/80 text-slate-600 px-2 py-0.5 rounded-lg shadow-sm">
                               {route.count} đơn
                             </span>
                             {route.pending > 0 && (
@@ -679,7 +663,7 @@ export default function RevenueChart() {
                           <span className="font-black text-sm" style={{ color: color.from }}>
                             {formatMoney(route.revenue)}
                           </span>
-                          <span className="text-[10px] font-bold text-[#9c9287] ml-1.5">
+                          <span className="text-[10px] font-bold text-slate-400 ml-1.5">
                             ({pct.toFixed(0)}%)
                           </span>
                         </div>

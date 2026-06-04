@@ -6,6 +6,46 @@ import { mapDbToVehicle } from '@/lib/supabase/mappers';
 import type { Vehicle } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 
+const STORAGE_BUCKET = 'Image Car';
+
+// Upload ảnh xe lên Supabase Storage, trả về public URL
+export async function uploadVehicleImageAction(
+  formData: FormData
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const session = await getAdminSession();
+    if (!session) return { success: false, error: 'Chưa đăng nhập.' };
+
+    const file = formData.get('file') as File;
+    if (!file) return { success: false, error: 'Không có file.' };
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileName = `vehicles/${Date.now()}.${ext}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    const supabase = getSupabaseServer();
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(fileName, buffer, {
+        contentType: file.type || 'image/jpeg',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      return { success: false, error: 'Không thể upload ảnh: ' + error.message };
+    }
+
+    // Dùng Supabase SDK để lấy public URL chuẩn (tránh lỗi encode)
+    const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
+    const publicUrl = urlData.publicUrl;
+    return { success: true, url: publicUrl };
+  } catch (err: any) {
+    console.error('uploadVehicleImageAction error:', err);
+    return { success: false, error: 'Lỗi hệ thống khi upload ảnh.' };
+  }
+}
+
 // Load vehicles
 export async function getVehicles(): Promise<Vehicle[]> {
   try {
@@ -45,6 +85,7 @@ export async function addVehicleAction(
         vehicle_type: vehicle.type,
         seat_count: vehicle.seats,
         license_plate: vehicle.plateNumber,
+        image_url: vehicle.imageUrl || null,
         description: vehicle.description,
         is_active: true,
       },
@@ -85,6 +126,7 @@ export async function updateVehicleAction(
         vehicle_type: vehicle.type,
         seat_count: vehicle.seats,
         license_plate: vehicle.plateNumber,
+        image_url: vehicle.imageUrl || null,
         description: vehicle.description,
         is_active: vehicle.status === 'active',
       })
@@ -144,5 +186,47 @@ export async function toggleVehicleStatusAction(
   } catch (error) {
     console.error('Error in toggleVehicleStatusAction:', error);
     return { success: false, error: 'Lỗi hệ thống khi đổi trạng thái xe.' };
+  }
+}
+
+// Soft-delete xe + toàn bộ gói giá của xe đó
+export async function deleteVehicleAction(
+  id: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await getAdminSession();
+    if (!session) {
+      return { success: false, error: 'Phiên đăng nhập hết hạn hoặc không hợp lệ.' };
+    }
+
+    const supabase = getSupabaseServer();
+
+    // 1. Soft-delete tất cả packages của xe này
+    const { error: pkgError } = await supabase
+      .from('packages')
+      .update({ is_deleted: true, is_active: false })
+      .eq('vehicle_id', id);
+
+    if (pkgError) {
+      console.error('Error deleting packages:', pkgError);
+      return { success: false, error: 'Không thể xóa gói giá của xe.' };
+    }
+
+    // 2. Soft-delete xe
+    const { error: vehError } = await supabase
+      .from('vehicles')
+      .update({ is_deleted: true, is_active: false })
+      .eq('vehicle_id', id);
+
+    if (vehError) {
+      console.error('Error deleting vehicle:', vehError);
+      return { success: false, error: 'Không thể xóa xe.' };
+    }
+
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('Error in deleteVehicleAction:', error);
+    return { success: false, error: 'Lỗi hệ thống khi xóa xe.' };
   }
 }
