@@ -37,6 +37,9 @@ export default function PackageTable() {
   const [packageType, setPackageType] = useState<PackageType>('shared-seat');
   const [price, setPrice] = useState(0);
   const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   const handleOpenAdd = () => {
     setEditingPackage(null);
@@ -45,6 +48,7 @@ export default function PackageTable() {
     setPackageType('shared-seat');
     setPrice(200000);
     setDescription('Đưa đón tận nơi, xe đời mới.');
+    setErrorMsg('');
     setIsOpen(true);
   };
 
@@ -55,33 +59,44 @@ export default function PackageTable() {
     setPackageType(pkg.type);
     setPrice(pkg.price);
     setDescription(pkg.description);
+    setErrorMsg('');
     setIsOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVehicleName || !selectedRouteName || price <= 0) return;
 
-    if (editingPackage) {
-      updatePackage(editingPackage.id, {
-        vehicleName: selectedVehicleName,
-        routeName: selectedRouteName,
-        type: packageType,
-        price,
-        description,
-        status: editingPackage.status
-      });
+    setSaving(true);
+    setErrorMsg('');
+    const result = editingPackage
+      ? await updatePackage(editingPackage.id, {
+          vehicleName: selectedVehicleName,
+          routeName: selectedRouteName,
+          type: packageType,
+          price,
+          description,
+          status: editingPackage.status
+        })
+      : await addPackage({
+          vehicleName: selectedVehicleName,
+          routeName: selectedRouteName,
+          type: packageType,
+          price,
+          description
+        });
+    setSaving(false);
+    if (result.success) {
+      setIsOpen(false);
     } else {
-      addPackage({
-        vehicleName: selectedVehicleName,
-        routeName: selectedRouteName,
-        type: packageType,
-        price,
-        description
-      });
+      setErrorMsg(result.error || 'Đã xảy ra lỗi.');
     }
+  };
 
-    setIsOpen(false);
+  const handleToggle = async (id: number) => {
+    setTogglingId(id);
+    await togglePackageStatus(id);
+    setTogglingId(null);
   };
 
   // Filtered packages logic
@@ -199,8 +214,9 @@ export default function PackageTable() {
                     >
                       Sửa
                     </button>
-                    <button 
-                      onClick={() => togglePackageStatus(item.id)}
+                    <button
+                      onClick={() => handleToggle(item.id)}
+                      disabled={togglingId === item.id}
                       className={`rounded-2xl px-3.5 py-1.5 text-xs font-bold transition border-none ${
                         item.status === 'active'
                           ? 'bg-rose-50 text-rose-800 hover:bg-rose-100'
@@ -308,19 +324,24 @@ export default function PackageTable() {
                 />
               </div>
 
+              {errorMsg && (
+                <p className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-2.5 text-sm text-rose-700">{errorMsg}</p>
+              )}
+
               <div className="flex justify-end gap-2 border-t border-[#e8dccb]/20 pt-4">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsOpen(false)}
                   className="rounded-2xl bg-[#f4f0e8] px-5 py-2.5 text-sm font-bold text-[#5f6b76] hover:bg-[#e7dfd2] transition border-none"
                 >
                   Hủy bỏ
                 </button>
-                <button 
+                <button
                   type="submit"
-                  className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition border-none"
+                  disabled={saving}
+                  className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition border-none disabled:opacity-60"
                 >
-                  Lưu thay đổi
+                  {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>

@@ -7,6 +7,7 @@ export function mapDbToVehicle(db: any): Vehicle {
     type: db.vehicle_type,
     seats: db.seat_count,
     plateNumber: db.license_plate,
+    imageUrl: db.image_url || '',
     description: db.description || '',
     status: db.is_active ? 'active' : 'hidden',
   };
@@ -23,17 +24,22 @@ export function mapDbToRoute(db: any): RouteItem {
   };
 }
 
+function normalizePackageType(raw: string): 'shared-seat' | 'private-trip' {
+  if (raw === 'shared' || raw === 'shared-seat') return 'shared-seat';
+  return 'private-trip';
+}
+
 export function mapDbToPackage(db: any): PricePackage {
   const vehicleName = db.vehicles?.vehicle_name || 'Phương tiện';
-  const routeName = db.routes 
-    ? `${db.routes.departure_point} - ${db.routes.destination_point}` 
+  const routeName = db.routes
+    ? `${db.routes.departure_point} → ${db.routes.destination_point}`
     : 'Tuyến đường';
 
   return {
     id: db.package_id,
     vehicleName,
     routeName,
-    type: db.package_type,
+    type: normalizePackageType(db.package_type),
     price: db.price ? Number(db.price) : 0,
     description: db.description || '',
     status: db.is_active ? 'active' : 'hidden',

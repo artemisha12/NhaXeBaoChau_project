@@ -29,7 +29,6 @@ const menuItems = [
       </svg>
     ),
   },
-
   {
     href: "/admin/vehicles",
     label: "Quản lý xe",
@@ -82,7 +81,7 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout, setMobileSidebarOpen } = useAdmin();
+  const { logout, setMobileSidebarOpen, adminUser } = useAdmin();
 
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -91,33 +90,37 @@ export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
   };
 
   const handleLinkClick = () => {
-    if (isMobile) {
-      setMobileSidebarOpen(false);
-    }
+    if (isMobile) setMobileSidebarOpen(false);
   };
 
   const asideClasses = isMobile
-    ? "flex h-full w-full flex-col bg-[#04101b] p-5 border-r border-[#123047]"
-    : "hidden min-h-screen w-72 border-r border-[#123047] bg-[#04101b] p-5 lg:flex lg:flex-col";
+    ? "flex h-full w-full flex-col bg-[#04101b] px-4 py-5 border-r border-white/5 text-white"
+    : "hidden min-h-screen w-68 border-r border-white/5 bg-[#04101b] px-4 py-5 lg:flex lg:flex-col text-white";
+
+  const initials = adminUser
+    ? adminUser.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
+    : 'A';
 
   return (
     <aside className={asideClasses}>
-      <div className="flex items-center justify-between">
-        <Link href="/" onClick={handleLinkClick} className="flex flex-1 items-center gap-3 rounded-2xl bg-[#123047] border border-white/5 p-3 text-white">
-          <div className="h-11 w-11 rounded-xl bg-white overflow-hidden p-1 flex items-center justify-center shrink-0">
-            <img src="/images/hero/logo.png" alt="Bảo Châu Car" className="h-full object-contain" />
+
+      {/* Logo */}
+      <div className="flex items-center justify-between mb-8">
+        <Link href="/" onClick={handleLinkClick} className="flex items-center gap-3 px-2">
+          <div className="h-9 w-9 rounded-xl bg-white overflow-hidden p-1 flex items-center justify-center shrink-0 shadow-md">
+            <img src="/images/hero/logo.png" alt="Bảo Châu" className="h-full object-contain" />
           </div>
           <div>
-            <p className="font-bold text-[#f8c95c] leading-tight">Bảo Châu Admin</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Hệ thống quản trị</p>
+            <p className="font-extrabold text-white text-sm leading-tight">Bảo Châu</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Admin</p>
           </div>
         </Link>
-        
+
         {isMobile && (
-          <button 
+          <button
             onClick={() => setMobileSidebarOpen(false)}
-            className="ml-2 rounded-2xl border border-white/10 p-3 bg-[#123047] text-slate-300 hover:bg-[#0a1d2c] focus:outline-none"
-            aria-label="Close menu"
+            className="rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white transition"
+            aria-label="Đóng menu"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -127,38 +130,59 @@ export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
         )}
       </div>
 
-      <nav className="mt-8 flex-1 space-y-1.5">
+      {/* Label nhóm */}
+      <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+        Điều hướng
+      </p>
+
+      {/* Menu items */}
+      <nav className="flex-1 space-y-0.5">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link 
-              key={item.href} 
-              href={item.href} 
+            <Link
+              key={item.href}
+              href={item.href}
               onClick={handleLinkClick}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold transition duration-150 ${
-                isActive 
-                  ? "bg-[#c88925] text-white shadow-lg shadow-[#c88925]/20" 
-                  : "text-white/75 hover:bg-white/5 hover:text-white"
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
+                isActive
+                  ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
+                  : 'text-white hover:bg-white/10'
               }`}
             >
-              <span className={isActive ? "text-white" : "text-white/60"}>{item.icon}</span>
+              <span className={`shrink-0 ${isActive ? 'text-white' : 'text-white'}`}>
+                {item.icon}
+              </span>
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-white/5">
+      {/* User info + logout */}
+      <div className="mt-4 border-t border-white/8 pt-4 space-y-1">
+        {/* Admin user */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
+          <div className="h-8 w-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-amber-400">{initials}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white truncate">{adminUser || 'Admin'}</p>
+            <p className="text-[10px] text-slate-500 font-medium">Quản trị viên</p>
+          </div>
+        </div>
+
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold text-rose-400 hover:bg-rose-500/10 hover:text-rose-450 transition focus:outline-none"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-all duration-150 focus:outline-none"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
-          Đăng xuất tài khoản
+          Đăng xuất
         </button>
       </div>
     </aside>

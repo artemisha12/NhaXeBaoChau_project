@@ -8,7 +8,9 @@ export default function DashboardPage() {
   return (
     <>
       <AdminHeader title="Tổng quan" />
-      <main className="p-5 sm:p-8 space-y-8">
+      <main className="p-6 sm:p-8 space-y-6 min-h-screen"
+        style={{ backgroundImage: 'radial-gradient(circle, rgba(200,137,37,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }}
+      >
         {/* 1. Summary Cards */}
         <DashboardCards />
 

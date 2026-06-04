@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useAdmin } from "@/context/AdminContext";
+import { uploadVehicleImageAction } from '@/app/actions/vehicles/actions';
 import type { Vehicle } from "@/lib/types";
 
 
@@ -17,11 +18,16 @@ const VEHICLE_TYPES = [
 ];
 
 export default function VehicleTable() {
-  const { vehicles, addVehicle, updateVehicle, toggleVehicleStatus } = useAdmin();
+  const { vehicles, addVehicle, updateVehicle, toggleVehicleStatus, deleteVehicle } = useAdmin();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   // Form state — tên biến khớp với cột DB
   const [vehicleName, setVehicleName] = useState('');       // vehicle_name
@@ -31,19 +37,24 @@ export default function VehicleTable() {
   const [imageUrl, setImageUrl] = useState('');             // image_url
   const [description, setDescription] = useState('');       // description
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Giới hạn 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 5MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg('Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 10MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setImageUrl(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+    setErrorMsg('');
+    const fd = new FormData();
+    fd.append('file', file);
+    const result = await uploadVehicleImageAction(fd);
+    setUploading(false);
+    if (result.success && result.url) {
+      setImageUrl(result.url);
+    } else {
+      setErrorMsg(result.error || 'Upload ảnh thất bại.');
+    }
   };
 
   const resetForm = () => {
@@ -59,6 +70,7 @@ export default function VehicleTable() {
   const handleOpenAdd = () => {
     setEditingVehicle(null);
     resetForm();
+    setErrorMsg('');
     setIsOpen(true);
   };
 
@@ -73,9 +85,11 @@ export default function VehicleTable() {
     setIsOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vehicleName.trim() || !licensePlate.trim()) return;
+    setSaving(true);
+    setErrorMsg('');
 
     const payload = {
       name: vehicleName.trim(),
@@ -86,101 +100,194 @@ export default function VehicleTable() {
       description: description.trim(),
     };
 
-    if (editingVehicle) {
-      updateVehicle(editingVehicle.id, { ...payload, status: editingVehicle.status });
+    const result = editingVehicle
+      ? await updateVehicle(editingVehicle.id, { ...payload, status: editingVehicle.status })
+      : await addVehicle(payload);
+
+    setSaving(false);
+    if (result.success) {
+      setIsOpen(false);
     } else {
-      addVehicle(payload);
+      setErrorMsg(result.error || 'Đã xảy ra lỗi. Vui lòng thử lại.');
     }
-    setIsOpen(false);
+  };
+
+  const handleToggle = async (id: number) => {
+    setTogglingId(id);
+    await toggleVehicleStatus(id);
+    setTogglingId(null);
+  };
+
+  const handleDelete = async (id: number, name: string) => {
+    if (!confirm(`Xóa xe "${name}" và toàn bộ gói giá liên quan?\n\nThao tác này không thể hoàn tác.`)) return;
+    setDeletingId(id);
+    const result = await deleteVehicle(id);
+    setDeletingId(null);
+    if (!result.success) alert(result.error || 'Xóa thất bại.');
   };
 
   return (
-    <div className="rounded-3xl bg-[#fffdf8] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] font-sans border-none">
+    <div className="bg-white rounded-2xl border border-amber-100 font-sans overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
         <div>
-          <h2 className="text-lg font-black text-[#102033]">Danh sách đội xe</h2>
-          <p className="text-sm text-[#5f6b76]">Tên xe, biển số, loại xe, số chỗ, ảnh và mô tả.</p>
+          <h2 className="text-base font-semibold text-slate-900">Danh sách đội xe</h2>
+          <p className="text-xs text-slate-400 mt-0.5">{vehicles.length} xe trong hệ thống</p>
         </div>
         <button
           onClick={handleOpenAdd}
-          className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition duration-150 border-none"
+          className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition border-none"
         >
-          + Thêm xe mới
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Thêm xe mới
         </button>
       </div>
 
       {/* Grid xe */}
-      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {vehicles.map((vehicle) => (
-          <div
-            key={vehicle.id}
-            className={`rounded-3xl overflow-hidden transition duration-200 shadow-[0_4px_16px_rgba(16,32,51,0.02)] hover:shadow-[0_8px_24px_rgba(16,32,51,0.05)] border-none ${vehicle.status === 'hidden'
-                ? 'bg-[#fbfaf7]/60 opacity-60'
-                : 'bg-[#fbfaf7]'
+      <div className="p-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {vehicles.map((vehicle) => {
+          const isHidden = vehicle.status === 'hidden';
+          return (
+            <div
+              key={vehicle.id}
+              className={`rounded-xl border overflow-hidden transition-all duration-200 ${
+                isHidden
+                  ? 'border-slate-200 bg-slate-50'
+                  : 'border-amber-100 bg-white hover:shadow-md hover:border-amber-200'
               }`}
-          >
-            {/* Ảnh xe — image_url */}
-            <div className="relative h-40 bg-[#04101b] flex items-center justify-center overflow-hidden">
-              {vehicle.imageUrl ? (
-                <img
-                  src={vehicle.imageUrl}
-                  alt={vehicle.name}
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full bg-[#1a2e40]" />
-              )}
-              {/* Badge trạng thái */}
-              <span className={`absolute top-3 right-3 rounded-xl px-2.5 py-1 text-xs font-bold ${vehicle.status === 'active'
-                  ? 'bg-[#d1fae5] text-[#15803d]'
-                  : 'bg-slate-200 text-slate-700'
-                }`}>
-                {vehicle.status === 'active' ? 'Đang chạy' : 'Đang ẩn'}
-              </span>
-            </div>
+            >
+              {/* Ảnh xe */}
+              <div className="relative h-44 bg-slate-800 overflow-hidden">
+                {vehicle.imageUrl ? (
+                  <img
+                    src={vehicle.imageUrl}
+                    alt={vehicle.name}
+                    className={`h-full w-full object-cover transition-opacity ${isHidden ? 'opacity-40 grayscale' : ''}`}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="h-full w-full flex flex-col items-center justify-center gap-2 bg-slate-800">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#4a6580" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+                      <circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" />
+                    </svg>
+                    <span className="text-xs text-slate-500">Chưa có ảnh</span>
+                  </div>
+                )}
 
-            {/* Nội dung card */}
-            <div className="p-5">
-              {/* Tên xe — vehicle_name */}
-              <h3 className="text-base font-black text-[#102033] leading-tight">{vehicle.name}</h3>
-              {/* Loại xe — vehicle_type */}
-              <p className="text-xs font-bold text-[#c88925] uppercase tracking-wider mt-1">{vehicle.type}</p>
-              {/* Mô tả — description */}
-              <p className="mt-2 text-sm text-[#5f6b76] line-clamp-2 min-h-[38px]">{vehicle.description || '—'}</p>
+                {/* Overlay khi ẩn */}
+                {isHidden && (
+                  <div className="absolute inset-0 bg-slate-900/30 flex items-center justify-center">
+                    <span className="bg-slate-900/70 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                      Đang ẩn khỏi web
+                    </span>
+                  </div>
+                )}
 
-              {/* Thông tin số liệu */}
-              <div className="mt-4 flex justify-between border-t border-[#e8dccb]/20 pt-4 text-sm font-semibold text-[#5f6b76]">
-                {/* seat_count */}
-                <span>Chỗ ngồi: <strong className="text-[#102033]">{vehicle.seats} chỗ</strong></span>
-                {/* license_plate */}
-                <span>Biển số: <strong className="text-[#102033]">{vehicle.plateNumber}</strong></span>
+                {/* Status badge */}
+                {!isHidden && (
+                  <span className="absolute top-2.5 right-2.5 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                    Đang chạy
+                  </span>
+                )}
               </div>
 
-              {/* Actions */}
-              <div className="mt-4 flex gap-2 border-t border-[#e8dccb]/20 pt-4">
-                <button
-                  onClick={() => handleOpenEdit(vehicle)}
-                  className="flex-1 rounded-2xl bg-[#fffdf8] py-2 text-xs font-bold text-[#5f6b76] hover:bg-[#f6efe1] transition border-none shadow-[0_2px_6px_rgba(16,32,51,0.02)]"
-                >
-                  Sửa thông tin
-                </button>
-                <button
-                  onClick={() => toggleVehicleStatus(vehicle.id)}
-                  className={`flex-1 rounded-2xl py-2 text-xs font-bold transition border-none ${vehicle.status === 'active'
-                      ? 'bg-rose-50 text-rose-800 hover:bg-rose-100'
-                      : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+              {/* Body */}
+              <div className="p-4">
+                {/* Tên + loại */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className={`text-sm font-bold leading-tight ${isHidden ? 'text-slate-500' : 'text-slate-900'}`}>
+                      {vehicle.name}
+                    </h3>
+                    <span className={`text-[10px] font-semibold uppercase tracking-wider mt-0.5 ${isHidden ? 'text-slate-400' : 'text-amber-600'}`}>
+                      {vehicle.type}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Mô tả */}
+                <p className={`mt-2 text-xs leading-relaxed line-clamp-2 ${isHidden ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {vehicle.description || 'Chưa có mô tả'}
+                </p>
+
+                {/* Stats */}
+                <div className={`mt-3 flex items-center justify-between text-xs border-t pt-3 ${isHidden ? 'border-slate-200' : 'border-slate-100'}`}>
+                  <span className="flex items-center gap-1.5 text-slate-500">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    <span className="font-semibold text-slate-700">{vehicle.seats} chỗ</span>
+                  </span>
+                  <span className={`font-mono text-[11px] font-semibold px-2 py-0.5 rounded ${isHidden ? 'bg-slate-200 text-slate-500' : 'bg-slate-100 text-slate-700'}`}>
+                    {vehicle.plateNumber}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => handleOpenEdit(vehicle)}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    Chỉnh sửa
+                  </button>
+                  <button
+                    onClick={() => handleToggle(vehicle.id)}
+                    disabled={togglingId === vehicle.id}
+                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition border disabled:opacity-50 ${
+                      isHidden
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                        : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
                     }`}
-                >
-                  {vehicle.status === 'active' ? 'Ẩn xe' : 'Hiện xe'}
-                </button>
+                  >
+                    {togglingId === vehicle.id ? (
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : isHidden ? (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Hiện lên web
+                      </>
+                    ) : (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                        Ẩn khỏi web
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(vehicle.id, vehicle.name)}
+                    disabled={deletingId === vehicle.id}
+                    className="flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                    title="Xóa xe"
+                  >
+                    {deletingId === vehicle.id ? (
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                    ) : (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        <path d="M10 11v6M14 11v6" />
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Modal Thêm / Sửa */}
@@ -275,13 +382,14 @@ export default function VehicleTable() {
                   className="cursor-pointer rounded-2xl border border-dashed border-[#e8dccb]/80 bg-[#fbfaf7] hover:bg-[#fff8e8] transition overflow-hidden"
                   style={{ minHeight: '120px' }}
                 >
-                  {imageUrl ? (
+                  {uploading ? (
+                    <div className="flex flex-col items-center justify-center h-28 gap-2 text-amber-600">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+                      <span className="text-xs font-semibold">Đang upload lên Storage...</span>
+                    </div>
+                  ) : imageUrl ? (
                     <div className="relative group">
-                      <img
-                        src={imageUrl}
-                        alt="Preview"
-                        className="w-full h-36 object-cover"
-                      />
+                      <img src={imageUrl} alt="Preview" className="w-full h-36 object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <span className="text-white text-sm font-bold">Nhấn để đổi ảnh</span>
                       </div>
@@ -294,7 +402,7 @@ export default function VehicleTable() {
                         <path d="m21 15-5-5L5 21" />
                       </svg>
                       <span className="text-xs font-semibold">Nhấn để chọn ảnh từ máy</span>
-                      <span className="text-xs text-[#9a9a9a]/70">JPG, PNG, WEBP — tối đa 5MB</span>
+                      <span className="text-xs text-[#9a9a9a]/70">JPG, PNG, WEBP — tối đa 10MB</span>
                     </div>
                   )}
                 </div>
@@ -337,6 +445,10 @@ export default function VehicleTable() {
                 />
               </div>
 
+              {errorMsg && (
+                <p className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-2.5 text-sm text-rose-700">{errorMsg}</p>
+              )}
+
               <div className="flex justify-end gap-2 border-t border-[#e8dccb]/20 pt-4">
                 <button
                   type="button"
@@ -347,9 +459,10 @@ export default function VehicleTable() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition border-none"
+                  disabled={saving || uploading}
+                  className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition border-none disabled:opacity-60"
                 >
-                  {editingVehicle ? 'Lưu thay đổi' : 'Thêm xe'}
+                  {saving ? 'Đang lưu...' : uploading ? 'Chờ upload ảnh...' : editingVehicle ? 'Lưu thay đổi' : 'Thêm xe'}
                 </button>
               </div>
             </form>

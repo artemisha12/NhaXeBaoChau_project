@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import StatusBadge from "@/components/common/StatusBadge";
 import { useAdmin } from "@/context/AdminContext";
 import type { Booking, BookingStatus } from "@/lib/types";
+import { getBookingsPaginated, addBookingAction } from '@/app/actions/bookings/actions';
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("vi-VN").format(value) + "đ";
@@ -15,7 +16,7 @@ function formatCreatedAt(dateStr?: string) {
     const d = new Date(dateStr);
     const today = new Date();
     const isToday = d.toDateString() === today.toDateString();
-    
+
     const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
     if (isToday) {
       return `Đặt lúc: ${timeStr} (Hôm nay)`;
@@ -28,15 +29,13 @@ function formatCreatedAt(dateStr?: string) {
 }
 
 export default function BookingTable() {
-  const { 
-    bookings, 
-    routes, 
+  const {
+    routes,
     packages,
-    addBooking,
-    updateBookingStatus, 
+    updateBookingStatus,
     updateBookingInternalNote,
     updateBookingTravelTime,
-    bookingHistory 
+    bookingHistory
   } = useAdmin();
 
   // Filter States
@@ -78,33 +77,43 @@ export default function BookingTable() {
   const todayStr = getLocalDateString(new Date());
   const tomorrowStr = getLocalDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
-  // Filter logic
-  const filteredBookings = bookings.filter((booking) => {
-    const matchesSearch = 
-      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.phone.includes(searchQuery) ||
-      booking.code.toLowerCase().includes(searchQuery.toLowerCase());
-      
-    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-    const matchesRoute = routeFilter === 'all' || booking.routeName === routeFilter;
+  // Pagination state
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 25;
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const matchesDate = (() => {
-      if (dateFilter === 'all') return true;
-      if (dateFilter === 'today') return booking.travelDate === todayStr;
-      if (dateFilter === 'tomorrow') return booking.travelDate === tomorrowStr;
-      if (dateFilter === 'custom') return booking.travelDate === customDate;
-      return true;
-    })();
+  const fetchBookings = useCallback(async (page: number, reset: boolean = false) => {
+    setLoadingBookings(true);
+    const result = await getBookingsPaginated({
+      page,
+      pageSize: PAGE_SIZE,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      search: searchQuery || undefined,
+      date: dateFilter === 'custom' ? customDate : dateFilter === 'today' ? todayStr : dateFilter === 'tomorrow' ? tomorrowStr : undefined,
+    });
+    setBookings(prev => reset ? result.bookings : [...prev, ...result.bookings]);
+    setHasMore(result.hasMore);
+    setTotalCount(result.total);
+    setCurrentPage(page);
+    setLoadingBookings(false);
+  }, [statusFilter, searchQuery, dateFilter, customDate, todayStr, tomorrowStr]);
 
-    return matchesSearch && matchesStatus && matchesRoute && matchesDate;
-  });
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      fetchBookings(0, true);
+    }, searchQuery ? 400 : 0);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [statusFilter, searchQuery, dateFilter, customDate]);
 
-  // Sort logic: new bookings first, then latest ID first
-  const sortedBookings = [...filteredBookings].sort((a, b) => {
-    if (a.status === 'new' && b.status !== 'new') return -1;
-    if (a.status !== 'new' && b.status === 'new') return 1;
-    return b.id - a.id;
-  });
+  // Client-side route filter on already-loaded data
+  const displayBookings = routeFilter === 'all'
+    ? bookings
+    : bookings.filter(b => b.routeName === routeFilter);
 
   const handleOpenDetail = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -114,7 +123,7 @@ export default function BookingTable() {
     setIsUpdatingStatus(null);
   };
 
-  const handleSaveInternalNote = () => {
+  const handleSaveInternalNote = async () => {
     if (!selectedBooking) return;
     updateBookingInternalNote(selectedBooking.id, internalNoteInput);
     // Update local state to reflect change immediately
@@ -125,21 +134,18 @@ export default function BookingTable() {
     alert('Đã lưu ghi chú nội bộ thành công!');
   };
 
-  const handleUpdateStatus = (status: BookingStatus) => {
+  const handleUpdateStatus = async (status: BookingStatus) => {
     if (!selectedBooking) return;
-    updateBookingStatus(selectedBooking.id, status, statusChangeNote);
-    
-    // Update local state
-    setSelectedBooking({
-      ...selectedBooking,
-      status
-    });
+    await updateBookingStatus(selectedBooking.id, status, statusChangeNote);
+    setSelectedBooking({ ...selectedBooking, status });
+    // Refresh current page to get latest from DB
+    await fetchBookings(0, true);
     setStatusChangeNote('');
     setIsUpdatingStatus(null);
   };
 
   // Get status history for the active booking
-  const activeHistory = selectedBooking 
+  const activeHistory = selectedBooking
     ? bookingHistory.filter(h => h.bookingId === selectedBooking.id)
     : [];
   return (
@@ -150,7 +156,7 @@ export default function BookingTable() {
           <h2 className="text-lg font-black text-[#102033]">Danh sách đơn đặt vé</h2>
           <p className="text-sm text-[#5f6b76]">Quản lý trạng thái, liên hệ hành khách và phân bổ xe.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsAddOpen(true)}
           className="rounded-2xl bg-[#c88925] hover:bg-[#a86e19] text-white px-5 py-2.5 text-sm font-bold transition flex items-center gap-1.5 self-start sm:self-auto shadow-sm"
         >
@@ -166,16 +172,16 @@ export default function BookingTable() {
       <div className="flex flex-wrap gap-3 bg-[#fbfaf7] border-b border-[#e8dccb]/20 p-5">
         {/* Search */}
         <div className="relative min-w-[200px] flex-1">
-          <input 
+          <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]" 
-            placeholder="Tìm tên, SĐT hoặc mã đơn..." 
+            className="w-full rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925] focus:ring-1 focus:ring-[#c88925]"
+            placeholder="Tìm tên, SĐT hoặc mã đơn..."
           />
         </div>
 
         {/* Route filter */}
-        <select 
+        <select
           value={routeFilter}
           onChange={(e) => setRouteFilter(e.target.value)}
           className="rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
@@ -187,7 +193,7 @@ export default function BookingTable() {
         </select>
 
         {/* Date filter dropdown */}
-        <select 
+        <select
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
           className="rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
@@ -200,7 +206,7 @@ export default function BookingTable() {
 
         {/* Custom date picker */}
         {dateFilter === 'custom' && (
-          <input 
+          <input
             type="date"
             value={customDate}
             onChange={(e) => setCustomDate(e.target.value)}
@@ -209,7 +215,7 @@ export default function BookingTable() {
         )}
 
         {/* Status filter */}
-        <select 
+        <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-2xl border border-[#e8dccb]/60 bg-[#fffdf8] text-[#102033] px-4 py-2.5 text-sm outline-none focus:border-[#c88925]"
@@ -238,15 +244,20 @@ export default function BookingTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e8dccb]/30">
-            {sortedBookings.length > 0 ? (
-              sortedBookings.map((booking) => {
+            {loadingBookings && bookings.length === 0 ? (
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
+                <div className="flex justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-[#c88925] border-t-transparent" /></div>
+                <p className="mt-2 text-sm text-[#5f6b76]">Đang tải dữ liệu...</p>
+              </td></tr>
+            ) : displayBookings.length > 0 ? (
+              displayBookings.map((booking) => {
                 const isNew = booking.status === 'new';
                 return (
-                  <tr 
-                    key={booking.id} 
+                  <tr
+                    key={booking.id}
                     className={`transition duration-150 border-b border-[#e8dccb]/30 ${
-                      isNew 
-                        ? "bg-amber-500/5 hover:bg-amber-500/10 border-l-4 border-l-amber-500 font-medium" 
+                      isNew
+                        ? "bg-amber-500/5 hover:bg-amber-500/10 border-l-4 border-l-amber-500 font-medium"
                         : "hover:bg-[#f6efe1]/30"
                     }`}
                   >
@@ -290,7 +301,7 @@ export default function BookingTable() {
                     <td className="px-5 py-4 font-black text-[#102033]">{formatMoney(booking.totalPrice)}</td>
                     <td className="px-5 py-4"><StatusBadge status={booking.status} /></td>
                     <td className="px-5 py-4">
-                      <button 
+                      <button
                         onClick={() => handleOpenDetail(booking)}
                         className="rounded-2xl bg-[#ffefc2] hover:bg-[#ffe08a] px-4 py-2 text-xs font-bold text-[#805112] transition border-none"
                       >
@@ -309,6 +320,26 @@ export default function BookingTable() {
             )}
           </tbody>
         </table>
+
+        {/* Pagination footer */}
+        {(hasMore || loadingBookings) && (
+          <div className="flex items-center justify-center gap-4 px-5 py-4 border-t border-[#e8dccb]/30">
+            <span className="text-sm text-[#5f6b76]">
+              Hiện {bookings.length} / {totalCount} đơn
+            </span>
+            {hasMore && !loadingBookings && (
+              <button
+                onClick={() => fetchBookings(currentPage + 1)}
+                className="rounded-xl bg-[#c88925] px-4 py-2 text-xs font-bold text-white hover:bg-[#a86e19] transition"
+              >
+                Tải thêm
+              </button>
+            )}
+            {loadingBookings && (
+              <span className="text-xs text-[#5f6b76]">Đang tải...</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Booking Detail Modal */}
@@ -328,7 +359,7 @@ export default function BookingTable() {
                 </div>
                 <h3 className="text-xl font-black text-[#102033]">{selectedBooking.code}</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedBooking(null)}
                 className="rounded-2xl bg-[#fbfaf7] hover:bg-[#f6efe1] p-2.5 text-[#5f6b76] focus:outline-none transition border-none"
               >
@@ -358,13 +389,13 @@ export default function BookingTable() {
                     <p><strong>Tuyến đường:</strong> {selectedBooking.routeName}</p>
                     <p><strong>Ngày khởi hành:</strong> {selectedBooking.travelDate} {selectedBooking.travelTime && <span className="font-black text-indigo-750 bg-indigo-50 px-1.5 py-0.5 rounded text-xs">{selectedBooking.travelTime}</span>}</p>
                     <p><strong>Số lượng:</strong> {selectedBooking.passengerCount} người</p>
-                    
+
                     {/* Edit Departure Time */}
                     <div className="pt-2.5 border-t border-[#e8dccb]/30 mt-2.5">
                       <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cập nhật Giờ đi</label>
                       <div className="flex gap-2">
-                        <input 
-                          type="time" 
+                        <input
+                          type="time"
                           value={modalTravelTime}
                           onChange={(e) => setModalTravelTime(e.target.value)}
                           className="rounded-xl border border-[#e8dccb]/60 bg-white text-[#102033] px-3 py-1.5 text-xs outline-none focus:border-[#c88925] font-sans"
@@ -424,7 +455,7 @@ export default function BookingTable() {
               {/* Status Update Section */}
               <div className="rounded-2xl bg-[#fbfaf7] p-5 shadow-[0_2px_12px_rgba(16,32,51,0.02)] border-none">
                 <h4 className="text-sm font-black text-[#102033] mb-3">Cập nhật tiến trình đơn hàng</h4>
-                
+
                 {isUpdatingStatus ? (
                   <div className="space-y-4">
                     <p className="text-sm font-semibold text-[#102033]">
@@ -585,7 +616,7 @@ export default function BookingTable() {
                 <span className="text-xs font-bold text-[#9c9287] uppercase tracking-wider">Thao tác quản trị</span>
                 <h3 className="text-xl font-black text-[#102033]">Đặt vé thủ công</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setIsAddOpen(false)}
                 className="rounded-2xl bg-[#fbfaf7] hover:bg-[#f6efe1] p-2.5 text-[#5f6b76] focus:outline-none transition border-none"
               >
@@ -597,8 +628,8 @@ export default function BookingTable() {
             </div>
 
             {/* Modal Body */}
-            <form 
-              onSubmit={(e) => {
+            <form
+              onSubmit={async (e) => {
                 e.preventDefault();
                 if (!addCustomerName || !addPhone || !addPkgId || !addTravelDate || !addPickup || !addDropoff) {
                   alert('Vui lòng điền đầy đủ các thông tin bắt buộc.');
@@ -612,7 +643,7 @@ export default function BookingTable() {
                 const computedPrice = isShared ? unitPrice * addPassengerCount : unitPrice;
                 const totalPrice = addCustomPrice !== null ? addCustomPrice : computedPrice;
 
-                addBooking({
+                const result = await addBookingAction({
                   customerName: addCustomerName,
                   phone: addPhone,
                   routeName: selectedPkg.routeName,
@@ -627,27 +658,30 @@ export default function BookingTable() {
                   customerNote: addNote || undefined,
                 });
 
-                alert('Đã tạo đơn đặt vé thủ công thành công!');
-                
-                // Reset form
-                setAddCustomerName('');
-                setAddPhone('');
-                setAddPkgId('');
-                setAddTravelDate('');
-                setAddTravelTime('');
-                setAddPickup('');
-                setAddDropoff('');
-                setAddPassengerCount(1);
-                setAddCustomPrice(null);
-                setAddEmail('');
-                setAddNote('');
-                setIsAddOpen(false);
-              }} 
+                if (result.success) {
+                  setIsAddOpen(false);
+                  await fetchBookings(0, true);
+                  // Reset form fields
+                  setAddCustomerName('');
+                  setAddPhone('');
+                  setAddPkgId('');
+                  setAddTravelDate('');
+                  setAddTravelTime('');
+                  setAddPickup('');
+                  setAddDropoff('');
+                  setAddPassengerCount(1);
+                  setAddCustomPrice(null);
+                  setAddEmail('');
+                  setAddNote('');
+                } else {
+                  alert(result.error || 'Không thể thêm đơn.');
+                }
+              }}
               className="p-6 space-y-4"
             >
               <div>
                 <label className="block text-xs font-bold text-[#5f6b76] uppercase">Tên khách hàng *</label>
-                <input 
+                <input
                   required
                   value={addCustomerName}
                   onChange={(e) => setAddCustomerName(e.target.value)}
@@ -658,7 +692,7 @@ export default function BookingTable() {
 
               <div>
                 <label className="block text-xs font-bold text-[#5f6b76] uppercase">Số điện thoại *</label>
-                <input 
+                <input
                   required
                   type="tel"
                   value={addPhone}
@@ -670,7 +704,7 @@ export default function BookingTable() {
 
               <div>
                 <label className="block text-xs font-bold text-[#5f6b76] uppercase">Chọn gói giá dịch vụ *</label>
-                <select 
+                <select
                   required
                   value={addPkgId}
                   onChange={(e) => setAddPkgId(e.target.value)}
@@ -688,7 +722,7 @@ export default function BookingTable() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#5f6b76] uppercase">Ngày đi *</label>
-                  <input 
+                  <input
                     required
                     type="date"
                     value={addTravelDate}
@@ -699,7 +733,7 @@ export default function BookingTable() {
 
                 <div>
                   <label className="block text-xs font-bold text-[#5f6b76] uppercase">Giờ đi *</label>
-                  <input 
+                  <input
                     required
                     type="time"
                     value={addTravelTime}
@@ -710,7 +744,7 @@ export default function BookingTable() {
 
                 <div>
                   <label className="block text-xs font-bold text-[#5f6b76] uppercase">Số hành khách *</label>
-                  <input 
+                  <input
                     required
                     type="number"
                     min={1}
@@ -724,7 +758,7 @@ export default function BookingTable() {
 
               <div>
                 <label className="block text-xs font-bold text-[#5f6b76] uppercase">Địa chỉ đón tận nơi *</label>
-                <input 
+                <input
                   required
                   value={addPickup}
                   onChange={(e) => setAddPickup(e.target.value)}
@@ -735,7 +769,7 @@ export default function BookingTable() {
 
               <div>
                 <label className="block text-xs font-bold text-[#5f6b76] uppercase">Địa chỉ trả tận nơi *</label>
-                <input 
+                <input
                   required
                   value={addDropoff}
                   onChange={(e) => setAddDropoff(e.target.value)}
@@ -747,7 +781,7 @@ export default function BookingTable() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#5f6b76] uppercase">Email (tùy chọn)</label>
-                  <input 
+                  <input
                     type="email"
                     value={addEmail}
                     onChange={(e) => setAddEmail(e.target.value)}
@@ -758,13 +792,13 @@ export default function BookingTable() {
 
                 <div>
                   <label className="block text-xs font-bold text-[#5f6b76] uppercase">Thực thu tùy chỉnh (VNĐ)</label>
-                  <input 
+                  <input
                     type="number"
                     placeholder={
-                      addPkgId 
-                        ? String(packages.find(p => p.id === Number(addPkgId))?.type === 'shared-seat' 
-                            ? (packages.find(p => p.id === Number(addPkgId))?.price || 0) * addPassengerCount 
-                            : (packages.find(p => p.id === Number(addPkgId))?.price || 0)) 
+                      addPkgId
+                        ? String(packages.find(p => p.id === Number(addPkgId))?.type === 'shared-seat'
+                            ? (packages.find(p => p.id === Number(addPkgId))?.price || 0) * addPassengerCount
+                            : (packages.find(p => p.id === Number(addPkgId))?.price || 0))
                         : "Tính tự động"
                     }
                     value={addCustomPrice === null ? '' : addCustomPrice}
@@ -776,7 +810,7 @@ export default function BookingTable() {
 
               <div>
                 <label className="block text-xs font-bold text-[#5f6b76] uppercase">Ghi chú hành khách (tùy chọn)</label>
-                <textarea 
+                <textarea
                   rows={2}
                   value={addNote}
                   onChange={(e) => setAddNote(e.target.value)}
@@ -787,14 +821,14 @@ export default function BookingTable() {
 
               {/* Modal Actions */}
               <div className="flex justify-end gap-2 border-t border-[#e8dccb]/20 pt-4">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsAddOpen(false)}
                   className="rounded-2xl bg-[#f4f0e8] px-5 py-2.5 text-sm font-bold text-[#5f6b76] hover:bg-[#e7dfd2] transition border-none focus:outline-none"
                 >
                   Hủy bỏ
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#a86e19] transition border-none focus:outline-none"
                 >

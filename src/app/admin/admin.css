@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* Custom fonts or adjustments for the admin panel can go here */
-body {
-  font-family: 'Be Vietnam Pro', sans-serif;
+/* Dùng đúng font từ root layout (Plus Jakarta Sans) */
+.admin-root,
+.admin-root * {
+  font-family: var(--font-plus-jakarta-sans), 'Plus Jakarta Sans', sans-serif;
 }
