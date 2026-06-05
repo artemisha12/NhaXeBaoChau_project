@@ -10,14 +10,34 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Nhà xe Bảo Châu — Xe ghép cao cấp Huế · Đà Nẵng · Hội An",
+  title: "Xe Ghép Huế - Đà Nẵng - Hội An Giá Rẻ, Đón Tận Nơi | Xe Bảo Châu",
   description:
-    "Bảo Châu Car — Dịch vụ xe ghép liên tỉnh cao cấp tuyến Huế – Đà Nẵng – Hội An. An toàn, đúng giờ, đón tận địa chỉ, giá minh bạch, không phụ thu ẩn.",
-  keywords: "xe ghép Huế Đà Nẵng Hội An, đặt xe Bảo Châu, xe ghép cao cấp miền Trung",
+    "Dịch vụ xe ghép, bao xe liên tỉnh Huế - Đà Nẵng - Hội An cao cấp. Đón trả tận nhà, đúng giờ, lái xe an toàn, phục vụ chu đáo, giá rẻ minh bạch. Đặt ngay!",
+  keywords: [
+    "xe ghép huế đà nẵng",
+    "xe ghép đà nẵng huế",
+    "xe ghép hội an đà nẵng",
+    "nhà xe bảo châu",
+    "thuê xe ghép huế",
+    "xe limousine huế đà nẵng",
+    "bao xe huế đà nẵng",
+    "xe bao châu huế"
+  ].join(", "),
+  authors: [{ name: "Nhà xe Bảo Châu" }],
   openGraph: {
-    title: "Nhà xe Bảo Châu — Xe ghép cao cấp Huế · Đà Nẵng · Hội An",
-    description: "An toàn · Tiện lợi · Đúng giờ trên mọi hành trình.",
+    title: "Xe Ghép Huế - Đà Nẵng - Hội An Giá Rẻ | Xe Bảo Châu",
+    description: "Dịch vụ xe ghép, bao xe liên tỉnh Huế - Đà Nẵng - Hội An cao cấp. Đón trả tận nơi, đúng giờ, lái xe an toàn.",
     type: "website",
+    locale: "vi_VN",
+    siteName: "Nhà Xe Bảo Châu",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Xe Ghép Huế - Đà Nẵng - Hội An Giá Rẻ | Xe Bảo Châu",
+    description: "Dịch vụ xe ghép, bao xe liên tỉnh Huế - Đà Nẵng - Hội An cao cấp. Đón trả tận nơi, đúng giờ, lái xe an toàn.",
+  },
+  alternates: {
+    canonical: "/",
   },
 };
 

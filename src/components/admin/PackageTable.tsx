@@ -304,8 +304,8 @@ export default function PackageTable() {
                 <input 
                   type="number"
                   required
-                  min={1000}
-                  step={5000}
+                  min={0}
+                  step={1000}
                   value={price}
                   onChange={(e) => setPrice(Number(e.target.value))}
                   placeholder="Ví dụ: 200000" 

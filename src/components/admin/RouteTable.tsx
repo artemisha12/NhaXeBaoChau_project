@@ -203,6 +203,7 @@ export default function RouteTable() {
                   type="number"
                   required
                   min={1}
+                  step="any"
                   value={distanceKm}
                   onChange={(e) => setDistanceKm(e.target.value)}
                   placeholder="Ví dụ: 100" 
