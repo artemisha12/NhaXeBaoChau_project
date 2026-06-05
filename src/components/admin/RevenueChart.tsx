@@ -230,7 +230,7 @@ export default function RevenueChart() {
 
   const weeklyRevenue = weekDays.map((day) => {
     const confirmed = bookings.filter(
-      (b) => b.travelDate === day.date && (b.status === 'confirmed' || b.status === 'completed')
+      (b) => b.travelDate === day.date && (b.status === 'completed')
     );
     const revenue = confirmed.reduce((sum, b) => sum + b.totalPrice, 0);
     const count = confirmed.length;
@@ -267,7 +267,7 @@ export default function RevenueChart() {
 
   const monthlyRevenueData = monthDays.map((day) => {
     const confirmed = bookings.filter(
-      (b) => b.travelDate === day.date && (b.status === 'confirmed' || b.status === 'completed')
+      (b) => b.travelDate === day.date && (b.status === 'completed')
     );
     const revenue = confirmed.reduce((sum, b) => sum + b.totalPrice, 0);
     const count = confirmed.length;
@@ -294,7 +294,7 @@ export default function RevenueChart() {
 
   // Dynamic Xe ghép vs Bao xe split based on selected view mode
   const currentPeriodBookings = bookings.filter((b) => {
-    if (b.status !== 'confirmed' && b.status !== 'completed') return false;
+    if (b.status !== 'completed') return false;
     if (viewMode === 'week') {
       const weekDatesStr = weekDays.map((wd) => wd.date);
       return weekDatesStr.includes(b.travelDate);
@@ -320,7 +320,7 @@ export default function RevenueChart() {
   const routeMap: Record<string, { revenue: number; count: number; pending: number }> = {};
   bookings.forEach((b) => {
     if (!routeMap[b.routeName]) routeMap[b.routeName] = { revenue: 0, count: 0, pending: 0 };
-    if (b.status === 'confirmed' || b.status === 'completed') {
+    if (b.status === 'completed') {
       routeMap[b.routeName].revenue += b.totalPrice;
       routeMap[b.routeName].count += 1;
     }
@@ -333,13 +333,13 @@ export default function RevenueChart() {
 
   // --- Summary ---
   const monthlyActual = bookings
-    .filter(b => b.travelDate?.startsWith(currentMonthStr) && (b.status === 'confirmed' || b.status === 'completed'))
+    .filter(b => b.travelDate?.startsWith(currentMonthStr) && (b.status === 'completed'))
     .reduce((s, b) => s + b.totalPrice, 0);
   const monthlyProjected = bookings
     .filter(b => b.travelDate?.startsWith(currentMonthStr) && b.status !== 'cancelled')
     .reduce((s, b) => s + b.totalPrice, 0);
   const todayRevenue = bookings
-    .filter(b => b.travelDate === todayStr && (b.status === 'confirmed' || b.status === 'completed'))
+    .filter(b => b.travelDate === todayStr && (b.status === 'completed'))
     .reduce((s, b) => s + b.totalPrice, 0);
 
   // Y-axis labels for the chart

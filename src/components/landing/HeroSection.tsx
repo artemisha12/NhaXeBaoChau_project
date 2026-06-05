@@ -1,6 +1,5 @@
 'use client';
 
-import Header from '@/components/landing/Header';
 import { useAdmin } from '@/context/AdminContext';
 
 export default function HeroSection() {
@@ -17,8 +16,6 @@ export default function HeroSection() {
 
   return (
     <section id="home" className="hero">
-      {/* Header overlay trên ảnh */}
-      <Header heroOverlay />
 
       {/* Ảnh hero responsive */}
       <picture className="hero-picture">

@@ -44,6 +44,7 @@ import {
 
 import {
   getBookings,
+  getBookingHistory,
   updateBookingStatusAction,
   updateBookingInternalNoteAction,
   updateBookingTravelTimeAction,
@@ -143,123 +144,71 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSettings);
   const [bookingHistory, setBookingHistory] = useState<BookingHistoryItem[]>([]);
 
-  // Load from localStorage on mount & verify session from server
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedBookings = localStorage.getItem('bc_bookings');
-      if (storedBookings) {
-        const parsed = JSON.parse(storedBookings);
-        let hasMigration = false;
-        const migrated = parsed.map((b: Booking) => {
-          if (!b.travelTime) {
-            hasMigration = true;
-            // Generate a time based on ID
-            const hour = 7 + (b.id % 10);
-            const minute = (b.id * 15) % 60;
-            return {
-              ...b,
-              travelTime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
-            };
-          }
-          return b;
-        });
-        setBookings(migrated);
-        if (hasMigration) {
-          localStorage.setItem('bc_bookings', JSON.stringify(migrated));
-        }
-      }
-
-      // Load vehicles từ Supabase
-      getVehicles().then((dbVehicles) => {
-        if (dbVehicles.length > 0) setVehicles(dbVehicles);
-      }).catch(() => {});
-
-      // Load bookings từ Supabase (100 mới nhất cho dashboard)
-      getBookings().then((dbBookings) => {
-        if (dbBookings.length > 0) setBookings(dbBookings);
-      }).catch(() => {});
-
-      // Load routes từ Supabase (thay localStorage)
-      getRoutes().then((dbRoutes) => {
-        if (dbRoutes.length > 0) setRoutes(dbRoutes);
-      }).catch(() => {/* giữ mock-data nếu DB lỗi */});
-
-      // Load packages từ Supabase
-      getPackages().then((dbPackages) => {
-        if (dbPackages.length > 0) setPackages(dbPackages);
-      }).catch(() => {});
-
-      const storedSettings = localStorage.getItem('bc_site_settings');
-      if (storedSettings) setSiteSettings(JSON.parse(storedSettings));
-
-      const storedHistory = localStorage.getItem('bc_booking_history');
-      if (storedHistory) setBookingHistory(JSON.parse(storedHistory));
-
-      // Load settings từ Supabase (chạy trên mọi trang — cả admin lẫn public)
-      getSiteSettings().then((dbSettings) => {
-        if (dbSettings) setSiteSettings(dbSettings);
-      }).catch(() => {/* giữ default nếu DB lỗi */});
-
-      // Xác minh JWT session từ cookie httpOnly
-      const checkSession = async () => {
-        try {
-          const authRes = await getAdminInfoAction();
-          if (authRes.success && authRes.admin) {
-            setIsLoggedIn(true);
-            setAdminUser(authRes.admin.fullName);
-          } else {
-            setIsLoggedIn(false);
-            setAdminUser(null);
-          }
-        } catch (err) {
-          setIsLoggedIn(false);
-          setAdminUser(null);
-        } finally {
-          setIsMounted(true);
-        }
-      };
-      checkSession();
-    }
-  }, []);
-
-  // Sync data from localStorage when another tab writes to it (e.g. landing page booking)
-  // Also sync when the admin tab regains focus (visibilitychange)
+  // Mount: load public data + verify session
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const syncFromStorage = () => {
-      const storedBookings = localStorage.getItem('bc_bookings');
-      if (storedBookings) {
-        try { setBookings(JSON.parse(storedBookings)); } catch {}
-      }
-      const storedHistory = localStorage.getItem('bc_booking_history');
-      if (storedHistory) {
-        try { setBookingHistory(JSON.parse(storedHistory)); } catch {}
+    // Public data (không cần auth) — load song song
+    Promise.all([
+      getVehicles(),
+      getRoutes(),
+      getPackages(),
+      getSiteSettings(),
+    ]).then(([dbVehicles, dbRoutes, dbPackages, dbSettings]) => {
+      if (dbVehicles.length > 0) setVehicles(dbVehicles);
+      if (dbRoutes.length > 0)   setRoutes(dbRoutes);
+      if (dbPackages.length > 0) setPackages(dbPackages);
+      if (dbSettings)            setSiteSettings(dbSettings);
+    }).catch(() => {});
+
+    // Admin-only data — load SAU khi xác thực session
+    const checkSession = async () => {
+      try {
+        const authRes = await getAdminInfoAction();
+        if (authRes.success && authRes.admin) {
+          setIsLoggedIn(true);
+          setAdminUser(authRes.admin.fullName);
+
+          // Load bookings + history từ DB (chỉ khi là admin)
+          const [dbBookings, dbHistory] = await Promise.all([
+            getBookings(),
+            getBookingHistory(),
+          ]);
+          setBookings(dbBookings);
+          setBookingHistory(dbHistory.map((h: any) => ({
+            id: h.id,
+            bookingId: h.bookingId,
+            oldStatus: h.oldStatus,
+            newStatus: h.newStatus,
+            note: h.note,
+            changedAt: h.changedAt,
+            changedBy: h.changedBy,
+          })));
+        } else {
+          setIsLoggedIn(false);
+          setAdminUser(null);
+        }
+      } catch {
+        setIsLoggedIn(false);
+        setAdminUser(null);
+      } finally {
+        setIsMounted(true);
       }
     };
-
-    // Listen for changes from other tabs
-    const handleStorageEvent = (e: StorageEvent) => {
-      if (e.key === 'bc_bookings' || e.key === 'bc_booking_history') {
-        syncFromStorage();
-      }
-    };
-
-    // Also sync when tab becomes visible again (covers same-tab navigation)
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        syncFromStorage();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageEvent);
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageEvent);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
+    checkSession();
   }, []);
+
+  // Refresh bookings từ DB khi tab được focus lại (admin panel)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && isLoggedIn) {
+        getBookings().then(db => setBookings(db)).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isLoggedIn]);
 
   // Save helpers
   const saveToLocal = (key: string, data: any) => {
@@ -279,6 +228,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       } else {
         setAdminUser('Bảo Châu Admin');
       }
+      // Load dữ liệu thật ngay sau khi login thành công
+      const [dbBookings, dbHistory] = await Promise.all([
+        getBookings(),
+        getBookingHistory(),
+      ]);
+      setBookings(dbBookings);
+      setBookingHistory(dbHistory);
     }
     return res;
   };
@@ -324,61 +280,23 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Bookings CRUD (Quản lý localStorage mock-data)
-  const addBooking = (bookingData: Omit<Booking, 'id' | 'code' | 'status'>) => {
-    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randNum = Math.floor(100 + Math.random() * 900);
-    const newCode = `BC-${todayStr}-${randNum}`;
-    const newId = bookings.length > 0 ? Math.max(...bookings.map((b) => b.id)) + 1 : 1;
-
-    const newBooking: Booking = {
-      ...bookingData,
-      id: newId,
-      code: newCode,
-      status: 'new',
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedBookings = [newBooking, ...bookings];
-    setBookings(updatedBookings);
-    saveToLocal('bc_bookings', updatedBookings);
-
-    // Write history
-    const historyItem: BookingHistoryItem = {
-      id: Date.now(),
-      bookingId: newId,
-      oldStatus: 'created',
-      newStatus: 'new',
-      note: 'Khách hàng gửi yêu cầu đặt vé trực tuyến.',
-      changedAt: new Date().toISOString(),
-      changedBy: 'Khách hàng',
-    };
-    const updatedHistory = [historyItem, ...bookingHistory];
-    setBookingHistory(updatedHistory);
-    saveToLocal('bc_booking_history', updatedHistory);
-
-    return newBooking;
+  // addBooking — forms giờ dùng addBookingAction trực tiếp, hàm này chỉ reload
+  const addBooking = (_bookingData: Omit<Booking, 'id' | 'code' | 'status'>): Booking => {
+    getBookings().then(db => setBookings(db)).catch(() => {});
+    // Trả dummy để không break type, form thật dùng addBookingAction
+    return { id: 0, code: '', customerName: '', phone: '', routeName: '',
+      travelDate: '', pickupAddress: '', dropoffAddress: '',
+      passengerCount: 1, totalPrice: 0, status: 'new' };
   };
 
   const updateBookingStatus = async (bookingId: number, status: BookingStatus, note: string) => {
-    // Optimistic update
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status } : b));
     const result = await updateBookingStatusAction(bookingId, status, note);
     if (!result.success) {
-      // Rollback: reload từ DB
       getBookings().then(db => setBookings(db)).catch(() => {});
     } else {
-      // Thêm history entry locally
-      const historyItem: BookingHistoryItem = {
-        id: Date.now(),
-        bookingId,
-        oldStatus: bookings.find(b => b.id === bookingId)?.status || 'new',
-        newStatus: status,
-        note: note || '',
-        changedAt: new Date().toISOString(),
-        changedBy: adminUser || 'Nhân viên',
-      };
-      setBookingHistory(prev => [historyItem, ...prev]);
+      // Reload history từ DB sau khi cập nhật thành công
+      getBookingHistory().then(h => setBookingHistory(h)).catch(() => {});
     }
   };
 
