@@ -116,6 +116,50 @@ export async function loginAdminAction(
   }
 }
 
+export async function changePasswordAction(
+  oldPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('bc_admin_session')?.value;
+    if (!token) return { success: false, error: 'Chưa đăng nhập.' };
+
+    const { verifyAdminJWT } = await import('@/lib/helpers/jwt');
+    const session = await verifyAdminJWT(token);
+    if (!session) return { success: false, error: 'Phiên đăng nhập hết hạn.' };
+
+    if (newPassword.length < 8) {
+      return { success: false, error: 'Mật khẩu mới phải có ít nhất 8 ký tự.' };
+    }
+
+    const supabase = getSupabaseServer();
+    const { data: admin, error: fetchErr } = await supabase
+      .from('admins')
+      .select('admin_id, password_hash')
+      .eq('admin_id', session.adminId)
+      .single();
+
+    if (fetchErr || !admin) return { success: false, error: 'Không tìm thấy tài khoản.' };
+
+    const bcrypt = (await import('bcryptjs')).default;
+    const match = await bcrypt.compare(oldPassword, admin.password_hash);
+    if (!match) return { success: false, error: 'Mật khẩu hiện tại không đúng.' };
+
+    const newHash = await bcrypt.hash(newPassword, 12);
+    const { error: updateErr } = await supabase
+      .from('admins')
+      .update({ password_hash: newHash })
+      .eq('admin_id', admin.admin_id);
+
+    if (updateErr) return { success: false, error: 'Không thể cập nhật mật khẩu.' };
+
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Lỗi hệ thống khi đổi mật khẩu.' };
+  }
+}
+
 export async function logoutAdminAction(): Promise<{ success: boolean }> {
   try {
     const cookieStore = await cookies();

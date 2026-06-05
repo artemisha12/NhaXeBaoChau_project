@@ -247,157 +247,122 @@ export default function TodayBookings() {
         )}
       </div>
 
-      {/* ===== BOOKING DETAIL / PROCESS MODAL ===== */}
+      {/* ===== BOOKING DETAIL MODAL — Modern redesign ===== */}
       {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#04101b]/50 p-4 font-sans backdrop-blur-sm">
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl animate-fade-in border border-slate-200">
-            {/* Modal Header */}
-            <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5 z-10">
-              <div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={selectedBooking.status} />
-                  {selectedBooking.createdAt && (
-                    <span className="text-[10px] text-amber-700 font-extrabold bg-amber-50 px-2 py-0.5 rounded-md">
-                      {formatCreatedAt(selectedBooking.createdAt)}
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-xl font-black text-slate-900 mt-1">{selectedBooking.customerName}</h3>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 p-0 sm:p-4 font-sans backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden">
+
+            {/* ─── HEADER ─── */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-mono font-bold text-slate-400">{selectedBooking.code}</span>
+                {selectedBooking.createdAt && (
+                  <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {formatCreatedAt(selectedBooking.createdAt)}
+                  </span>
+                )}
               </div>
-              <button
-                onClick={() => setSelectedBooking(null)}
-                className="rounded-2xl p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 focus:outline-none transition border-none"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
+              <button onClick={() => setSelectedBooking(null)} className="rounded-xl p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-6">
-              {/* Main Info Blocks */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
-                  <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Thông tin khách hàng</h4>
-                  <div className="space-y-2 text-sm text-slate-900">
-                    <p><strong>Họ và tên:</strong> {selectedBooking.customerName}</p>
-                    <p><strong>Số điện thoại:</strong> <a href={`tel:${selectedBooking.phone}`} className="text-[#c88925] font-bold underline">{selectedBooking.phone}</a></p>
-                    {selectedBooking.customerEmail && <p><strong>Email:</strong> {selectedBooking.customerEmail}</p>}
-                  </div>
+            {/* ─── HERO INFO STRIP ─── */}
+            <div className="px-5 py-4 bg-[#04101b] text-white shrink-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold leading-tight">{selectedBooking.customerName}</h3>
+                  <a href={`tel:${selectedBooking.phone}`} className="text-amber-400 font-semibold text-sm mt-0.5 inline-flex items-center gap-1.5">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.7 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    {selectedBooking.phone}
+                  </a>
+                  {selectedBooking.customerEmail && (
+                    <p className="text-slate-400 text-xs mt-0.5">{selectedBooking.customerEmail}</p>
+                  )}
                 </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
-                  <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Thông tin hành trình</h4>
-                  <div className="space-y-2 text-sm text-slate-900">
-                    <p><strong>Tuyến đường:</strong> {selectedBooking.routeName}</p>
-                    <p><strong>Ngày khởi hành:</strong> {selectedBooking.travelDate} {selectedBooking.travelTime && <span className="font-black text-indigo-750 bg-indigo-50 px-1.5 py-0.5 rounded text-xs">{selectedBooking.travelTime}</span>}</p>
-                    <p><strong>Số lượng:</strong> {selectedBooking.passengerCount} người</p>
-
-                    {/* Edit Departure Time */}
-                    <div className="pt-2.5 border-t border-slate-200 mt-2.5">
-                      <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cập nhật Giờ đi</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="time"
-                          value={modalTravelTime}
-                          onChange={(e) => setModalTravelTime(e.target.value)}
-                          className="rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-1.5 text-xs outline-none focus:border-[#c88925] font-sans"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateBookingTravelTime(selectedBooking.id, modalTravelTime);
-                            setSelectedBooking({ ...selectedBooking, travelTime: modalTravelTime });
-                            alert('Đã cập nhật giờ đi thành công!');
-                          }}
-                          className="rounded-xl bg-[#123047] hover:bg-[#04101b] px-3 py-1.5 text-xs font-bold text-white transition border-none"
-                        >
-                          Lưu
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 md:col-span-2">
-                  <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Địa điểm đưa đón</h4>
-                  <div className="space-y-2 text-sm text-slate-900">
-                    <p className="flex items-center gap-1.5">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c88925" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                        <circle cx="12" cy="10" r="3" />
-                      </svg>
-                      <strong>Điểm đón:</strong> {selectedBooking.pickupAddress}
-                    </p>
-                    <p className="flex items-center gap-1.5">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c88925" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                        <line x1="4" y1="22" x2="4" y2="15" />
-                      </svg>
-                      <strong>Điểm trả:</strong> {selectedBooking.dropoffAddress}
-                    </p>
-                  </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider">Tổng tiền</p>
+                  <p className="text-2xl font-black text-amber-400 leading-tight">{formatMoney(selectedBooking.totalPrice)}</p>
+                  <div className="mt-1"><StatusBadge status={selectedBooking.status} /></div>
                 </div>
               </div>
 
-              {/* Amount & Status Banner */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-[#04101b] p-5 text-white shadow-lg border-none">
-                <div>
-                  <p className="text-xs text-slate-400">Tổng số tiền cước</p>
-                  <p className="text-2xl font-black text-[#f8c95c] mt-1">{formatMoney(selectedBooking.totalPrice)}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-300">Trạng thái:</span>
-                  <StatusBadge status={selectedBooking.status} />
-                </div>
+              {/* Route + Date row */}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+                <span className="flex items-center gap-1.5 text-white font-semibold">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f8c95c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/>
+                    <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/>
+                  </svg>
+                  {selectedBooking.routeName}
+                </span>
+                <span className="flex items-center gap-1 text-slate-300 text-xs">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  {selectedBooking.travelDate}
+                  {selectedBooking.travelTime && (
+                    <span className="ml-1 bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-bold text-[10px]">{selectedBooking.travelTime}</span>
+                  )}
+                </span>
+                <span className="text-slate-400 text-xs">{selectedBooking.passengerCount} hành khách</span>
               </div>
 
-              {/* Status Update Section */}
+              {/* Pickup / Dropoff compact */}
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <div className="bg-white/8 rounded-xl px-3 py-2">
+                  <p className="text-[9px] text-amber-400 uppercase tracking-wider font-bold mb-0.5">Điểm đón</p>
+                  <p className="text-xs text-white font-medium leading-snug">{selectedBooking.pickupAddress}</p>
+                </div>
+                <div className="bg-white/8 rounded-xl px-3 py-2">
+                  <p className="text-[9px] text-slate-400 uppercase tracking-wider font-bold mb-0.5">Điểm trả</p>
+                  <p className="text-xs text-white font-medium leading-snug">{selectedBooking.dropoffAddress}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ─── BODY scrollable ─── */}
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+
+              {/* STATUS ACTIONS — prominent */}
               {getNextStatuses(selectedBooking.status).length > 0 && (
-                <div className="rounded-2xl bg-slate-50 p-5 border border-slate-200">
-                  <h4 className="text-sm font-black text-slate-900 mb-3">Cập nhật tiến trình đơn hàng</h4>
-
+                <div className="px-5 py-4 bg-amber-50/50">
                   {isUpdatingStatus ? (
-                    <div className="space-y-4">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Xác nhận đổi trạng thái sang: <span className="text-[#c88925] font-black">
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-slate-700">
+                        Chuyển sang <span className="text-amber-600 font-bold">
                           {isUpdatingStatus === 'confirmed' ? 'Đã xác nhận' : isUpdatingStatus === 'completed' ? 'Hoàn thành' : 'Đã hủy'}
                         </span>
                       </p>
                       <textarea
-                        rows={3}
+                        rows={2}
                         value={statusChangeNote}
                         onChange={(e) => setStatusChangeNote(e.target.value)}
-                        placeholder="Nhập lý do đổi trạng thái hoặc ghi chú đi kèm... (Không bắt buộc)"
-                        className="w-full rounded-2xl border border-slate-200 p-3 text-sm outline-none bg-white text-slate-900"
+                        placeholder="Ghi chú đi kèm (không bắt buộc)..."
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-amber-400 resize-none"
                       />
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleUpdateStatus(isUpdatingStatus)}
-                          className="rounded-2xl bg-[#c88925] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#a86e19] transition border-none"
-                        >
-                          Chấp nhận đổi
+                        <button onClick={() => handleUpdateStatus(isUpdatingStatus)}
+                          className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold py-2.5 transition">
+                          Xác nhận chuyển
                         </button>
-                        <button
-                          onClick={() => setIsUpdatingStatus(null)}
-                          className="rounded-2xl bg-slate-100 px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition border-none"
-                        >
-                          Hủy bỏ
+                        <button onClick={() => setIsUpdatingStatus(null)}
+                          className="rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold px-5 py-2.5 transition">
+                          Hủy
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-semibold text-slate-500 mr-1">Chuyển trạng thái:</span>
                       {getNextStatuses(selectedBooking.status).map((action) => (
-                        <button
-                          key={action.status}
-                          onClick={() => setIsUpdatingStatus(action.status)}
-                          className={`rounded-2xl px-4 py-2.5 text-xs font-bold transition flex items-center gap-1.5 border-none ${action.style}`}
-                        >
-                          {action.icon}
-                          {action.label}
+                        <button key={action.status} onClick={() => setIsUpdatingStatus(action.status)}
+                          className={`rounded-xl px-4 py-2 text-xs font-bold transition flex items-center gap-1.5 border ${action.style}`}>
+                          {action.icon}{action.label}
                         </button>
                       ))}
                     </div>
@@ -405,64 +370,78 @@ export default function TodayBookings() {
                 </div>
               )}
 
-              {/* Notes Section */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl p-4 bg-slate-50 border border-slate-200">
-                  <h4 className="text-sm font-black text-slate-900 mb-2">Ghi chú của khách hàng</h4>
-                  <div className="text-sm text-slate-600 bg-white p-3 rounded-xl min-h-[80px] border border-slate-200">
-                    {selectedBooking.customerNote || 'Không có ghi chú nào từ khách hàng.'}
+              {/* UPDATE GIỜ ĐI */}
+              <div className="px-5 py-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Giờ khởi hành</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5">
+                    {selectedBooking.travelTime || <span className="text-slate-400 font-normal italic">Chưa xác định</span>}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <input type="time" value={modalTravelTime} onChange={(e) => setModalTravelTime(e.target.value)}
+                    className="rounded-lg border border-slate-200 bg-slate-50 text-slate-900 px-3 py-1.5 text-sm outline-none focus:border-amber-400 font-sans"/>
+                  <button type="button" onClick={async () => {
+                    await updateBookingTravelTime(selectedBooking.id, modalTravelTime);
+                    setSelectedBooking({ ...selectedBooking, travelTime: modalTravelTime });
+                  }} className="rounded-lg bg-[#0d1a28] hover:bg-[#04101b] px-3 py-1.5 text-xs font-semibold text-white transition">
+                    Lưu
+                  </button>
+                </div>
+              </div>
+
+              {/* NOTES */}
+              <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Ghi chú khách hàng</p>
+                  <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-sm text-slate-600 min-h-[60px]">
+                    {selectedBooking.customerNote || <span className="italic text-slate-400">Không có ghi chú</span>}
                   </div>
                 </div>
-
-                <div className="rounded-2xl p-4 bg-slate-50 border border-slate-200">
-                  <h4 className="text-sm font-black text-slate-900 mb-2">Ghi chú nội bộ (Nhân viên)</h4>
-                  <textarea
-                    rows={3}
-                    value={internalNoteInput}
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Ghi chú nội bộ</p>
+                  <textarea rows={3} value={internalNoteInput}
                     onChange={(e) => setInternalNoteInput(e.target.value)}
-                    placeholder="Chỉ nhân viên xem được: ví dụ đón ngã tư, khách có đồ cồng kềnh..."
-                    className="w-full rounded-xl p-3 text-sm outline-none bg-white text-slate-900 border border-slate-200 mb-2"
-                  />
-                  <button
-                    onClick={handleSaveInternalNote}
-                    className="rounded-2xl bg-[#123047] px-5 py-2 text-xs font-bold text-white hover:bg-[#04101b] transition border-none"
-                  >
+                    placeholder="Chỉ nhân viên xem được..."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-amber-400 resize-none"/>
+                  <button onClick={handleSaveInternalNote}
+                    className="mt-2 rounded-lg bg-[#0d1a28] hover:bg-[#04101b] px-4 py-1.5 text-xs font-semibold text-white transition">
                     Lưu ghi chú
                   </button>
                 </div>
               </div>
 
-              {/* History Logs */}
-              <div className="rounded-2xl p-5 bg-slate-50 border border-slate-200">
-                <h4 className="text-sm font-black text-slate-900 mb-3">Lịch sử xử lý đơn</h4>
-                <div className="space-y-3.5 max-h-[180px] overflow-y-auto pr-2">
-                  {activeHistory.length > 0 ? (
-                    activeHistory.map((log) => (
-                      <div key={log.id} className="relative pl-5 border-l-2 border-slate-200 text-xs">
-                        <div className="absolute -left-[5.5px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#c88925]"></div>
-                        <p className="text-slate-400">
-                          {new Date(log.changedAt).toLocaleString('vi-VN')} - <strong>{log.changedBy}</strong>
-                        </p>
-                        <p className="mt-1 font-semibold text-slate-900">
-                          Trạng thái: <span className="text-slate-500">{log.oldStatus === 'created' ? 'Mới' : log.oldStatus}</span> &rarr; <span className="text-slate-900 font-bold">{log.newStatus}</span>
-                        </p>
-                        {log.note && <p className="mt-1 text-slate-600 italic bg-white p-1.5 rounded-lg border border-slate-100">&ldquo;{log.note}&rdquo;</p>}
+              {/* HISTORY */}
+              <div className="px-5 py-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Lịch sử xử lý</p>
+                {activeHistory.length > 0 ? (
+                  <div className="space-y-2.5 max-h-[160px] overflow-y-auto">
+                    {activeHistory.map((log) => (
+                      <div key={log.id} className="flex gap-3 text-xs">
+                        <div className="mt-1 h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                        <div>
+                          <span className="text-slate-400">{new Date(log.changedAt).toLocaleString('vi-VN')}</span>
+                          <span className="text-slate-500 mx-1">·</span>
+                          <span className="font-semibold text-slate-700">{log.changedBy}</span>
+                          <p className="text-slate-600 mt-0.5">
+                            {log.oldStatus} → <span className="font-semibold text-slate-800">{log.newStatus}</span>
+                          </p>
+                          {log.note && <p className="text-slate-500 italic mt-0.5">"{log.note}"</p>}
+                        </div>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-slate-400 italic">Không có lịch sử thay đổi.</p>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">Chưa có lịch sử.</p>
+                )}
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 border-t border-slate-200 bg-white px-6 py-4 flex justify-end z-10">
-              <button
-                onClick={() => setSelectedBooking(null)}
-                className="rounded-2xl bg-[#04101b] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#123047] transition border-none"
-              >
-                Đóng chi tiết
+            {/* ─── FOOTER ─── */}
+            <div className="shrink-0 border-t border-slate-100 px-5 py-3 flex justify-end bg-white">
+              <button onClick={() => setSelectedBooking(null)}
+                className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-5 py-2 text-sm font-semibold text-slate-700 transition">
+                Đóng
               </button>
             </div>
           </div>

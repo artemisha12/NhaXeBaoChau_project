@@ -21,13 +21,17 @@ export function buildBookingMessage(booking: {
   phone: string;
   routeName: string;
   travelDate: string;
+  travelTime?: string;
   pickupAddress: string;
   dropoffAddress: string;
   passengerCount: number;
   totalPrice: number;
 }): string {
   const price = new Intl.NumberFormat('vi-VN').format(booking.totalPrice) + 'đ';
-  const date = booking.travelDate;
+  const dateTime = booking.travelTime
+    ? `<b>${booking.travelDate}</b> lúc <b>${booking.travelTime}</b>`
+    : `<b>${booking.travelDate}</b>`;
+
   return [
     `🚗 <b>ĐƠN ĐẶT VÉ MỚI</b>`,
     `━━━━━━━━━━━━━━━━━━`,
@@ -35,7 +39,7 @@ export function buildBookingMessage(booking: {
     `👤 Khách: <b>${booking.customerName}</b>`,
     `📞 SĐT: <code>${booking.phone}</code>`,
     `🛣 Tuyến: <b>${booking.routeName}</b>`,
-    `📅 Ngày đi: <b>${date}</b>`,
+    `📅 Ngày đi: ${dateTime}`,
     `📍 Đón: ${booking.pickupAddress}`,
     `📍 Trả: ${booking.dropoffAddress}`,
     `👥 Số khách: <b>${booking.passengerCount} người</b>`,

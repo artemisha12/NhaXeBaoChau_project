@@ -113,19 +113,23 @@ export default function BookingForm() {
     }
   };
 
-  // Listen to select-booking-pkg custom event from other components (like PriceList)
+  // Listen to select-booking-pkg custom event from other components (like PriceList, Quick Search)
   useEffect(() => {
     const handleSelectPkg = (e: Event) => {
       const customEvent = e as CustomEvent<{
         pkgId: string;
         tripType: 'shared-seat' | 'private-trip';
         routeName: string;
+        travelDate?: string;
+        travelTime?: string;
       }>;
       if (customEvent.detail) {
-        const { pkgId, tripType: newType, routeName: newRoute } = customEvent.detail;
+        const { pkgId, tripType: newType, routeName: newRoute, travelDate: newDate, travelTime: newTime } = customEvent.detail;
         if (newType) setTripType(newType);
         if (newRoute) setSelectedRoute(newRoute);
         if (pkgId) setSelectedPkgId(pkgId);
+        if (newDate) setTravelDate(newDate);
+        if (newTime) setTravelTime(newTime);
       }
     };
     window.addEventListener('select-booking-pkg', handleSelectPkg);
@@ -133,6 +137,7 @@ export default function BookingForm() {
       window.removeEventListener('select-booking-pkg', handleSelectPkg);
     };
   }, []);
+
 
   // Form Validation logic (strips non-digits for validation check)
   const isPhoneValid = !!phone.replace(/\D/g, '').match(/^(0[3|5|7|8|9])[0-9]{8}$/);

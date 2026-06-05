@@ -48,11 +48,26 @@ export function mapDbToPackage(db: any): PricePackage {
   };
 }
 
+// Regex parse giờ đi từ prefix [T:HH:mm] trong internal_note
+function parseTravelTime(internalNote: string | null): string | undefined {
+  if (!internalNote) return undefined;
+  const m = internalNote.match(/^\[T:([^\]]+)\]/);
+  return m ? m[1] : undefined;
+}
+
+function stripTimePrefix(internalNote: string | null): string | undefined {
+  if (!internalNote) return undefined;
+  const stripped = internalNote.replace(/^\[T:[^\]]*\]/, '').trim();
+  return stripped || undefined;
+}
+
 export function mapDbToBooking(db: any): Booking {
   let routeName = 'Tuyến đường';
   if (db.packages?.routes) {
-    routeName = `${db.packages.routes.departure_point} - ${db.packages.routes.destination_point}`;
+    routeName = `${db.packages.routes.departure_point} → ${db.packages.routes.destination_point}`;
   }
+
+  const rawInternalNote = db.internal_note || null;
 
   return {
     id: db.booking_id,
@@ -69,7 +84,10 @@ export function mapDbToBooking(db: any): Booking {
     customerEmail: db.customer_email || undefined,
     customerNote: db.customer_note || undefined,
     priceAtBooking: db.price_at_booking ? Number(db.price_at_booking) : undefined,
-    internalNote: db.internal_note || undefined,
+    // internalNote hiển thị không có prefix [T:...]
+    internalNote: stripTimePrefix(rawInternalNote),
     createdAt: db.created_at || undefined,
+    // Ưu tiên departure_time nếu có (sau khi migration), fallback parse từ internal_note
+    travelTime: db.departure_time || parseTravelTime(rawInternalNote) || undefined,
   };
 }

@@ -98,7 +98,10 @@ export async function addBookingAction(
           total_amount: bookingData.totalPrice,
           status: 'new',
           customer_note: bookingData.customerNote || null,
-          internal_note: bookingData.internalNote || null,
+          // Lưu giờ đi vào internal_note với prefix [T:HH:mm] — không cần thêm column
+          internal_note: bookingData.travelTime
+            ? `[T:${bookingData.travelTime}]${bookingData.internalNote || ''}`
+            : (bookingData.internalNote || null),
         },
       ])
       .select(`
@@ -136,6 +139,7 @@ export async function addBookingAction(
       phone: bookingData.phone,
       routeName: bookingData.routeName,
       travelDate: bookingData.travelDate,
+      travelTime: bookingData.travelTime || undefined,
       pickupAddress: bookingData.pickupAddress,
       dropoffAddress: bookingData.dropoffAddress,
       passengerCount: bookingData.passengerCount,
@@ -282,13 +286,40 @@ export async function updateBookingInternalNoteAction(
   }
 }
 
-// Update departure_time — column chưa có trong DB, chỉ cập nhật UI state
-// TODO: Thêm migration: ALTER TABLE bookings ADD COLUMN departure_time TIME;
+// Cập nhật giờ đi — lưu vào internal_note với prefix [T:HH:mm]
 export async function updateBookingTravelTimeAction(
-  _bookingId: number,
-  _travelTime: string
+  bookingId: number,
+  travelTime: string
 ): Promise<{ success: boolean; error?: string }> {
-  return { success: true }; // Graceful no-op cho đến khi migration được chạy
+  try {
+    const session = await getAdminSession();
+    if (!session) return { success: false, error: 'Chưa đăng nhập.' };
+    const supabase = getSupabaseServer();
+
+    // Đọc internal_note hiện tại để giữ phần note gốc
+    const { data: current } = await supabase
+      .from('bookings')
+      .select('internal_note')
+      .eq('booking_id', bookingId)
+      .single();
+
+    // Xóa prefix cũ nếu có, giữ nội dung note gốc
+    const existingNote = (current?.internal_note || '').replace(/^\[T:[^\]]*\]/, '');
+    const newNote = travelTime
+      ? `[T:${travelTime}]${existingNote}`
+      : existingNote || null;
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({ internal_note: newNote })
+      .eq('booking_id', bookingId);
+
+    if (error) return { success: false, error: 'Không thể cập nhật giờ đi.' };
+    revalidatePath('/admin/bookings');
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Lỗi hệ thống.' };
+  }
 }
 
 // Fetch booking history (Admin only)
@@ -354,18 +385,41 @@ export async function getDashboardStats(): Promise<{
     const supabase = getSupabaseServer();
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
-    const monthStr = todayStr.slice(0, 7);
     const yesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
-    const lastMonth = `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`;
+
+    // Dùng first day of next month thay vì '-31' để tránh invalid date (tháng 6, 4, 11 có 30 ngày)
+    const firstOfThisMonth  = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const firstOfNextMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 10);
+    const firstOfLastMonth  = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
 
     const [todayRes, pendingRes, monthlyRes, monthlyRevRes, yesterdayRes, lastMonthRes, lastMonthRevRes] = await Promise.all([
-      supabase.from('bookings').select('booking_id', { count: 'exact', head: true }).eq('is_deleted', false).gte('created_at', todayStr + 'T00:00:00').lte('created_at', todayStr + 'T23:59:59'),
-      supabase.from('bookings').select('booking_id', { count: 'exact', head: true }).eq('is_deleted', false).eq('status', 'new'),
-      supabase.from('bookings').select('booking_id', { count: 'exact', head: true }).eq('is_deleted', false).gte('departure_date', monthStr + '-01').lte('departure_date', monthStr + '-31'),
-      supabase.from('bookings').select('total_amount').eq('is_deleted', false).in('status', ['confirmed', 'completed']).gte('departure_date', monthStr + '-01').lte('departure_date', monthStr + '-31'),
-      supabase.from('bookings').select('booking_id', { count: 'exact', head: true }).eq('is_deleted', false).gte('created_at', yesterday + 'T00:00:00').lte('created_at', yesterday + 'T23:59:59'),
-      supabase.from('bookings').select('booking_id', { count: 'exact', head: true }).eq('is_deleted', false).gte('departure_date', lastMonth + '-01').lte('departure_date', lastMonth + '-31'),
-      supabase.from('bookings').select('total_amount').eq('is_deleted', false).in('status', ['confirmed', 'completed']).gte('departure_date', lastMonth + '-01').lte('departure_date', lastMonth + '-31'),
+      // Đơn hôm nay (tất cả, trừ đã hủy)
+      supabase.from('bookings').select('booking_id', { count: 'exact', head: true })
+        .eq('is_deleted', false).neq('status', 'cancelled')
+        .gte('created_at', todayStr + 'T00:00:00').lte('created_at', todayStr + 'T23:59:59'),
+      // Đơn chờ xử lý
+      supabase.from('bookings').select('booking_id', { count: 'exact', head: true })
+        .eq('is_deleted', false).eq('status', 'new'),
+      // Tổng đơn tháng này — chỉ HOÀN THÀNH
+      supabase.from('bookings').select('booking_id', { count: 'exact', head: true })
+        .eq('is_deleted', false).eq('status', 'completed')
+        .gte('departure_date', firstOfThisMonth).lt('departure_date', firstOfNextMonth),
+      // Doanh thu tháng này — chỉ HOÀN THÀNH
+      supabase.from('bookings').select('total_amount')
+        .eq('is_deleted', false).eq('status', 'completed')
+        .gte('departure_date', firstOfThisMonth).lt('departure_date', firstOfNextMonth),
+      // Đơn hôm qua
+      supabase.from('bookings').select('booking_id', { count: 'exact', head: true })
+        .eq('is_deleted', false).neq('status', 'cancelled')
+        .gte('created_at', yesterday + 'T00:00:00').lte('created_at', yesterday + 'T23:59:59'),
+      // Tổng đơn tháng trước — chỉ HOÀN THÀNH
+      supabase.from('bookings').select('booking_id', { count: 'exact', head: true })
+        .eq('is_deleted', false).eq('status', 'completed')
+        .gte('departure_date', firstOfLastMonth).lt('departure_date', firstOfThisMonth),
+      // Doanh thu tháng trước — chỉ HOÀN THÀNH
+      supabase.from('bookings').select('total_amount')
+        .eq('is_deleted', false).eq('status', 'completed')
+        .gte('departure_date', firstOfLastMonth).lt('departure_date', firstOfThisMonth),
     ]);
 
     const monthlyRevenue = (monthlyRevRes.data || []).reduce((s, b) => s + Number(b.total_amount), 0);

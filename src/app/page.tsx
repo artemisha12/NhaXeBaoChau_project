@@ -2,6 +2,7 @@
 
 // Landing Page — NhaXeBaoChau
 // Sections: Hero → WhyUs → Routes → Vehicles → PriceList → Testimonials → BookingForm → FAQ → Footer
+import Header       from '@/components/landing/Header';
 import HeroSection  from '@/components/landing/HeroSection';
 import WhyUs        from '@/components/landing/WhyUs';
 import Routes       from '@/components/landing/Routes';
@@ -16,8 +17,9 @@ import { AdminProvider } from '@/context/AdminContext';
 export default function HomePage() {
   return (
     <AdminProvider>
+      {/* Header fixed — tách ra khỏi HeroSection để position: fixed hoạt động đúng */}
+      <Header />
       <main>
-        {/* HeroSection đã bao gồm Header bên trong (overlay) */}
         <HeroSection />
 
         {/* Vì sao chọn Bảo Châu */}
