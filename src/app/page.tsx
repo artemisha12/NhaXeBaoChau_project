@@ -10,8 +10,9 @@ import VehicleList  from '@/components/landing/VehicleList';
 import PriceList    from '@/components/landing/PriceList';
 import Testimonials from '@/components/landing/Testimonials';
 import BookingForm  from '@/components/landing/BookingForm';
-import FAQ          from '@/components/landing/FAQ';
-import Footer       from '@/components/landing/Footer';
+import FAQ             from '@/components/landing/FAQ';
+import Footer          from '@/components/landing/Footer';
+import FloatingContact from '@/components/landing/FloatingContact';
 import { AdminProvider } from '@/context/AdminContext';
 
 export default function HomePage() {
@@ -46,6 +47,9 @@ export default function HomePage() {
         {/* Footer */}
         <Footer />
       </main>
+
+      {/* Floating contact buttons */}
+      <FloatingContact />
     </AdminProvider>
   );
 }

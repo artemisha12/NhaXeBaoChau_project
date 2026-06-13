@@ -88,7 +88,7 @@ export default function Footer() {
                   <li className="footer-contact-item">
                     <span className="footer-contact-key">Zalo</span>
                     <a
-                      href={zaloOaUrl}
+                      href={`https://zalo.me/${zaloPhone.replace(/\s+/g, '')}`}
                       className="footer-contact-val footer-contact-link"
                       target="_blank"
                       rel="noopener noreferrer"

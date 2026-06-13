@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAdmin } from '@/context/AdminContext';
 
 const FAQ_ITEMS = [
   {
@@ -39,6 +40,9 @@ const FAQ_ITEMS = [
 
 export default function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
+  const { siteSettings } = useAdmin();
+  const hotline   = (siteSettings?.hotline   || '0905123456').replace(/\s+/g, '');
+  const zaloPhone = (siteSettings?.zaloPhone || '0905123456').replace(/\s+/g, '');
 
   return (
     <section className="section faq-section" id="faq">
@@ -77,7 +81,7 @@ export default function FAQ() {
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a
-              href="tel:0900000000"
+              href={`tel:${hotline}`}
               className="btn btn-accent btn-lg"
               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             >
@@ -87,7 +91,7 @@ export default function FAQ() {
               Gọi Hotline
             </a>
             <a
-              href="https://zalo.me/0900000000"
+              href={`https://zalo.me/${zaloPhone}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline btn-lg"
