@@ -61,8 +61,8 @@ export type SiteSettings = {
 };
 
 const defaultSettings: SiteSettings = {
-  hotline: '0905 123 456',
-  zaloPhone: '0905 123 456',
+  hotline: '0767 375 375',
+  zaloPhone: '0767 375 375',
   officeAddress: 'Huế - Đà Nẵng - Hội An',
   workingHours: '06:00 - 22:00',
   bannerSlogan: 'An toàn - Tiện lợi - Đúng giờ trên mọi hành trình.',

@@ -14,5 +14,5 @@ ON CONFLICT (admin_id) DO NOTHING;
 
 -- 3. Thêm cấu hình website mặc định
 INSERT INTO site_settings (setting_id, hotline, zalo_phone, office_address, working_hours, banner_slogan, facebook_url, zalo_oa_url)
-VALUES (1, '0905 123 456', '0905 123 456', 'Huế - Đà Nẵng - Hội An', '06:00 - 22:00', 'An toàn - Tiện lợi - Đúng giờ trên mọi hành trình.', 'https://facebook.com/nhaxebaochau', 'https://zalo.me/nhaxebaochau')
+VALUES (1, '0767 375 375', '0767 375 375', 'Huế - Đà Nẵng - Hội An', '06:00 - 22:00', 'An toàn - Tiện lợi - Đúng giờ trên mọi hành trình.', 'https://facebook.com/nhaxebaochau', 'https://zalo.me/nhaxebaochau')
 ON CONFLICT (setting_id) DO NOTHING;
